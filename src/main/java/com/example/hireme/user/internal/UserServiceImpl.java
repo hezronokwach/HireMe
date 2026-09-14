@@ -1,24 +1,25 @@
 package com.example.hireme.user.internal;
 
+import com.example.hireme.shared.security.JwtTokenProvider;
 import com.example.hireme.user.UserService;
+import com.example.hireme.user.dto.AuthResponse;
+import com.example.hireme.user.dto.LoginRequest;
 import com.example.hireme.user.dto.RegisterRequest;
 import com.example.hireme.user.dto.UserResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-
-    public UserServiceImpl(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.userMapper = userMapper;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Override
     public UserResponse register(RegisterRequest registerRequest) {
@@ -33,13 +34,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean isOwner(Long userId) {
-        // Implementation will come later
-        return false;
+        return userRepository.findById(userId)
+                .map(user -> user.getRole() == User.Role.OWNER)
+                .orElse(false);
     }
 
     @Override
     public UserResponse getProfile(Long userId) {
-        // Implementation will come later
         return userRepository.findById(userId)
                 .map(userMapper::toResponse)
                 .orElse(null);
