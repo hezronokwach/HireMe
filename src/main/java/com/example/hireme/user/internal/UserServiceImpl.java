@@ -1,17 +1,13 @@
 package com.example.hireme.user.internal;
 
-import com.example.hireme.shared.security.JwtTokenProvider;
 import com.example.hireme.user.UserService;
-import com.example.hireme.user.dto.AuthResponse;
-import com.example.hireme.user.dto.LoginRequest;
 import com.example.hireme.user.dto.RegisterRequest;
 import com.example.hireme.user.dto.UserResponse;
+import com.example.hireme.user.internal.exception.UserAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +31,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean isOwner(Long userId) {
         return userRepository.findById(userId)
-                .map(user -> user.getRole() == User.Role.OWNER)
+                .map(user -> user.getRole() == User.Role.OWNER || user.getRole() == User.Role.ADMIN)
                 .orElse(false);
     }
 

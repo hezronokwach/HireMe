@@ -14,10 +14,10 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(schema ="app_equipent", name = "equipment")
+@Table(schema ="app_equipment", name = "equipment")
 public class EquipmentEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     Long ownerId;
     String name;

@@ -1,4 +1,4 @@
-package com.example.hireme.user.internal;
+package com.example.hireme.user.internal.exception;
 
 import com.example.hireme.shared.exception.BaseException;
 import org.springframework.http.HttpStatus;
