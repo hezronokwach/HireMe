@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 public record CreateEquipmentRequest(
         @NotBlank(message = "Name cannot be blank")
         String name,
-        @NotBlank(message = "Category is required")
+        @NotNull(message = "Category is required")
         Category category,
         String description,
         @NotNull(message = "Daily rate cannot be null") @DecimalMin("1")
