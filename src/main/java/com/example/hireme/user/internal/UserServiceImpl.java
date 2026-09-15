@@ -9,6 +9,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -40,5 +42,11 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(userId)
                 .map(userMapper::toResponse)
                 .orElse(null);
+    }
+
+    @Override
+    public Optional<Long> getUserIdByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(User::getId);
     }
 }

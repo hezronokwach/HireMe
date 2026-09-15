@@ -21,7 +21,7 @@ import java.util.List;
 public class EquipmentController {
 
     private final EquipmentService equipmentService;
-    private final com.example.hireme.user.internal.UserRepository userRepository;
+    private final com.example.hireme.user.UserService userService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
@@ -68,8 +68,7 @@ public class EquipmentController {
     }
 
     private Long getUserId(User userDetails) {
-        return userRepository.findByEmail(userDetails.getUsername())
-                .map(com.example.hireme.user.internal.User::getId)
+        return userService.getUserIdByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found in security context"));
     }
 }
