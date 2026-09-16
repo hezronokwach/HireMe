@@ -1,11 +1,10 @@
-package com.example.hireme.equipment.internal.exception;
+package com.example.hireme.booking.exception;
 
 import com.example.hireme.shared.exception.BaseException;
 import org.springframework.http.HttpStatus;
 
 public class ConflictException extends BaseException {
-
-    protected ConflictException() {
-        super("Cannot edit equipment", HttpStatus.CONFLICT);
+    public ConflictException(String message) {
+        super(message, HttpStatus.CONFLICT);
     }
 }
