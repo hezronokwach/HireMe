@@ -72,7 +72,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
+                // CSRF is intentionally disabled: this API is stateless (JWT-based, no session cookies),
+                // so there is no CSRF attack surface. NOSONAR java:S4502
+                .csrf(AbstractHttpConfigurer::disable) // NOSONAR java:S4502
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
