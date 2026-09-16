@@ -80,8 +80,8 @@ public class SecurityConfig {
                         // CodeQL [java/spring-csrf-disabled]: HttpOnly=false is required so the SPA
                         // JavaScript can read the XSRF-TOKEN cookie and send it back in the
                         // X-XSRF-TOKEN header. The cookie contains only the CSRF token, not
-                        // sensitive auth data. This is the standard Spring Security pattern for SPAs.
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        // sensitive auth data. This is the standard Spring Security pattern for SPAs. NOSONAR java:S3330
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()) // NOSONAR java:S3330
                         .csrfTokenRequestHandler(requestHandler)
                         // CodeQL [java/spring-csrf-disabled]: API endpoints are stateless JWT-based
                         // (no session cookies), so CSRF does not apply. JWT tokens are sent via
