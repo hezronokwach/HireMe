@@ -73,8 +73,9 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 // CSRF is intentionally disabled: this API is stateless (JWT-based, no session cookies),
-                // so there is no CSRF attack surface. NOSONAR java:S4502
-                .csrf(AbstractHttpConfigurer::disable) // NOSONAR java:S4502
+                // so there is no CSRF attack surface.
+                // CodeQL [java/csrf-disabled]: Stateless JWT API has no CSRF attack surface
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
