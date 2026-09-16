@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+.env
+docs/
+application-dev.yml
+src/test/resources/application.properties
