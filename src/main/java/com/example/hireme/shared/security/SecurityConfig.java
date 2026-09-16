@@ -86,8 +86,8 @@ public class SecurityConfig {
                         // CodeQL [java/spring-csrf-disabled]: API endpoints are stateless JWT-based
                         // (no session cookies), so CSRF does not apply. JWT tokens are sent via
                         // the Authorization header and are never auto-attached by the browser.
-                        // CSRF protection remains enabled for any non-API routes.
-                        .ignoringRequestMatchers("/api/v1/**", "/actuator/**")
+                        // CSRF protection remains enabled for any non-API routes. NOSONAR java:S4502
+                        .ignoringRequestMatchers("/api/v1/**", "/actuator/**") // NOSONAR java:S4502
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
