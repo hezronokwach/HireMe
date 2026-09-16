@@ -2,10 +2,12 @@ package com.example.hireme.booking.internal;
 
 import com.example.hireme.booking.dto.BookingResponse;
 import com.example.hireme.booking.dto.CreateBookingRequest;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
+@Component
 public class BookingMapper {
     public BookingEntity toBookingEntity
             (CreateBookingRequest createBookingRequest,

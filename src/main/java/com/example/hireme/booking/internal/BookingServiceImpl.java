@@ -71,6 +71,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingResponse confirm(Long bookingId, Long currentOwnerId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)
                 .orElseThrow(NotFoundException::new);
@@ -87,6 +88,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingResponse cancel(Long bookingId, Long currentUserId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)
                 .orElseThrow(NotFoundException::new);
@@ -109,6 +111,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingResponse complete(Long bookingId, Long currentOwnerId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)
                 .orElseThrow(NotFoundException::new);
