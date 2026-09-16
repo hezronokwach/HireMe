@@ -5,6 +5,9 @@ import com.example.hireme.booking.exception.ConflictException;
 import com.example.hireme.booking.exception.ForbiddenException;
 import com.example.hireme.booking.exception.NotFoundException;
 import com.example.hireme.booking.exception.ValidationException;
+import com.example.hireme.shared.event.BookingCancelledEvent;
+import com.example.hireme.shared.event.BookingCompletedEvent;
+import com.example.hireme.shared.event.BookingCreatedEvent;
 import com.example.hireme.equipment.EquipmentResponse;
 import com.example.hireme.equipment.EquipmentService;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +46,6 @@ public class BookingServiceImpl implements BookingService {
         BookingEntity bookingEntity = bookingMapper.toBookingEntity(createBookingRequest, currentClientId, totalCostKes);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
 
-        equipmentService.markAsHired(savedBooking.getEquipmentId());
         eventPublisher.publishEvent(new BookingCreatedEvent(savedBooking.getBookingId(), savedBooking.getEquipmentId(), Instant.now()));
 
         return bookingMapper.toBookingResponse(savedBooking);
@@ -105,7 +107,6 @@ public class BookingServiceImpl implements BookingService {
         bookingEntity.setStatus(BookingStatus.CANCELLED);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
 
-        equipmentService.markAsAvailable(savedBooking.getEquipmentId());
         eventPublisher.publishEvent(new BookingCancelledEvent(savedBooking.getBookingId(), savedBooking.getEquipmentId(), Instant.now()));
 
         return bookingMapper.toBookingResponse(savedBooking);
@@ -127,7 +128,6 @@ public class BookingServiceImpl implements BookingService {
         bookingEntity.setStatus(BookingStatus.COMPLETED);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
 
-        equipmentService.markAsAvailable(savedBooking.getEquipmentId());
         eventPublisher.publishEvent(new BookingCompletedEvent(savedBooking.getBookingId(), savedBooking.getEquipmentId(), Instant.now()));
 
         return bookingMapper.toBookingResponse(savedBooking);

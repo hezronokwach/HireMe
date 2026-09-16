@@ -3,9 +3,13 @@ package com.example.hireme.equipment.internal;
 import com.example.hireme.equipment.*;
 import com.example.hireme.equipment.internal.exception.EquipmentNotFoundException;
 import com.example.hireme.equipment.internal.exception.ForbiddenException;
+import com.example.hireme.shared.event.BookingCancelledEvent;
+import com.example.hireme.shared.event.BookingCompletedEvent;
+import com.example.hireme.shared.event.BookingCreatedEvent;
 import com.example.hireme.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -118,5 +122,20 @@ public class EquipmentServiceImpl implements EquipmentService {
                         EquipmentStatus.AVAILABLE,
                         Instant.now())
         );
+    }
+
+    @ApplicationModuleListener
+    public void on(BookingCreatedEvent event) {
+        markAsHired(event.equipmentId());
+    }
+
+    @ApplicationModuleListener
+    public void on(BookingCancelledEvent event) {
+        markAsAvailable(event.equipmentId());
+    }
+
+    @ApplicationModuleListener
+    public void on(BookingCompletedEvent event) {
+        markAsAvailable(event.equipmentId());
     }
 }
