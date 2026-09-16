@@ -1,8 +1,9 @@
 package com.example.hireme.user.internal;
 
+import com.example.hireme.user.RegisterRequest;
+import com.example.hireme.user.Role;
+import com.example.hireme.user.UserResponse;
 import com.example.hireme.user.UserService;
-import com.example.hireme.user.dto.RegisterRequest;
-import com.example.hireme.user.dto.UserResponse;
 import com.example.hireme.user.internal.exception.UserAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,7 +34,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean isOwner(Long userId) {
         return userRepository.findById(userId)
-                .map(user -> user.getRole() == User.Role.OWNER || user.getRole() == User.Role.ADMIN)
+                .map(user -> user.getRole() == Role.OWNER || user.getRole() == Role.ADMIN)
                 .orElse(false);
     }
 

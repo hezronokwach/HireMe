@@ -1,5 +1,6 @@
 package com.example.hireme.booking.internal;
 
+import com.example.hireme.booking.BookingStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,20 +21,15 @@ public class BookingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long bookingId;
-    Long equipmentId;
-    Long clientId;
-    LocalDate startDate;
-    LocalDate endDate;
-    BigDecimal totalCostKes;
-    BookingStatus status;
-    Instant creationDate;
+    private Long bookingId;
+    private Long equipmentId;
+    private Long clientId;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private BigDecimal totalCostKes;
 
-    public enum BookingStatus {
-        PENDING,
-        CONFIRMED,
-        ACTIVE,
-        COMPLETED,
-        CANCELLED
-    }
+    @Enumerated(EnumType.STRING)
+    private BookingStatus status;
+
+    private Instant creationDate;
 }

@@ -1,5 +1,6 @@
 package com.example.hireme.user.internal;
 
+import com.example.hireme.user.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,8 +32,4 @@ public class User {
     private Role role;
 
     Instant createdAt;
-
-    public enum Role {
-        CLIENT, OWNER, ADMIN
-    }
 }

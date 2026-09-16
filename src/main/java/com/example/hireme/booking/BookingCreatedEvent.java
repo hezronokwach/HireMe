@@ -1,10 +1,10 @@
-package com.example.hireme.booking.events;
+package com.example.hireme.booking;
 
 import java.time.Instant;
 
 public record BookingCreatedEvent(
         Long bookingId,
         Long equipmentId,
-        Instant occuredAt
+        Instant occurredAt
 ) {
 }

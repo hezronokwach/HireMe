@@ -1,4 +1,4 @@
-package com.example.hireme.user.dto;
+package com.example.hireme.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

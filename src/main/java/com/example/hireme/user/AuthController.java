@@ -1,9 +1,5 @@
 package com.example.hireme.user;
 
-import com.example.hireme.user.dto.AuthResponse;
-import com.example.hireme.user.dto.LoginRequest;
-import com.example.hireme.user.dto.RegisterRequest;
-import com.example.hireme.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

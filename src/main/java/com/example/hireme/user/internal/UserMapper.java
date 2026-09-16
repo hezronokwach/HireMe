@@ -1,7 +1,7 @@
 package com.example.hireme.user.internal;
 
-import com.example.hireme.user.dto.RegisterRequest;
-import com.example.hireme.user.dto.UserResponse;
+import com.example.hireme.user.RegisterRequest;
+import com.example.hireme.user.UserResponse;
 import org.springframework.stereotype.Component;
 import java.time.Instant;
 

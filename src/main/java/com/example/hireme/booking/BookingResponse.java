@@ -1,6 +1,4 @@
-package com.example.hireme.booking.dto;
-
-import com.example.hireme.booking.internal.BookingEntity;
+package com.example.hireme.booking;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -13,7 +11,7 @@ public record BookingResponse(
         LocalDate startDate,
         LocalDate endDate,
         BigDecimal totalCostKes,
-        BookingEntity.BookingStatus status,
+        BookingStatus status,
         Instant creationDate
 ) {
 }

@@ -1,9 +1,5 @@
 package com.example.hireme.equipment;
 
-import com.example.hireme.equipment.dto.CreateEquipmentRequest;
-import com.example.hireme.equipment.dto.EquipmentResponse;
-import com.example.hireme.equipment.dto.UpdateEquipmentRequest;
-import com.example.hireme.equipment.internal.EquipmentEntity;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -40,7 +36,7 @@ public class EquipmentController {
 
     @GetMapping
     public ResponseEntity<List<EquipmentResponse>> getAll(
-            @RequestParam(required = false) EquipmentEntity.Category category
+            @RequestParam(required = false) Category category
     ) {
         return ResponseEntity.ok(equipmentService.getAll(category));
     }

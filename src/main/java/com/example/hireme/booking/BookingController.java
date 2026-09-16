@@ -1,7 +1,5 @@
 package com.example.hireme.booking;
 
-import com.example.hireme.booking.dto.BookingResponse;
-import com.example.hireme.booking.dto.CreateBookingRequest;
 import com.example.hireme.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

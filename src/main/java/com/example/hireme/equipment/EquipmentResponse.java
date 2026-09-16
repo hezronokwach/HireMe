@@ -1,7 +1,4 @@
-package com.example.hireme.equipment.dto;
-
-import com.example.hireme.equipment.internal.EquipmentEntity.EquipmentStatus;
-import com.example.hireme.equipment.internal.EquipmentEntity.Category;
+package com.example.hireme.equipment;
 
 import java.math.BigDecimal;
 import java.time.Instant;

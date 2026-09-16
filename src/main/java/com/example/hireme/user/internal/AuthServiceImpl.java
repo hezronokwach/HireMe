@@ -1,9 +1,9 @@
 package com.example.hireme.user.internal;
 
 import com.example.hireme.shared.security.JwtTokenProvider;
+import com.example.hireme.user.AuthResponse;
 import com.example.hireme.user.AuthService;
-import com.example.hireme.user.dto.AuthResponse;
-import com.example.hireme.user.dto.LoginRequest;
+import com.example.hireme.user.LoginRequest;
 import com.example.hireme.user.internal.exception.InvalidCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

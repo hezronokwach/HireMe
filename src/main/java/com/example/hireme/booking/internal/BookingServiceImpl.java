@@ -1,17 +1,12 @@
 package com.example.hireme.booking.internal;
 
-import com.example.hireme.booking.BookingService;
-import com.example.hireme.booking.dto.BookingResponse;
-import com.example.hireme.booking.dto.CreateBookingRequest;
-import com.example.hireme.booking.events.BookingCancelledEvent;
-import com.example.hireme.booking.events.BookingCompletedEvent;
-import com.example.hireme.booking.events.BookingCreatedEvent;
+import com.example.hireme.booking.*;
 import com.example.hireme.booking.exception.ConflictException;
 import com.example.hireme.booking.exception.ForbiddenException;
 import com.example.hireme.booking.exception.NotFoundException;
 import com.example.hireme.booking.exception.ValidationException;
+import com.example.hireme.equipment.EquipmentResponse;
 import com.example.hireme.equipment.EquipmentService;
-import com.example.hireme.equipment.dto.EquipmentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -35,10 +30,10 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest createBookingRequest, Long currentClientId) {
-        if (!equipmentService.isAvailable(createBookingRequest.equipmentId())){
+        if (!equipmentService.isAvailable(createBookingRequest.equipmentId())) {
             throw new ConflictException("Equipment is not available");
         }
-        if (createBookingRequest.endDate().isBefore(createBookingRequest.startDate())){
+        if (createBookingRequest.endDate().isBefore(createBookingRequest.startDate())) {
             throw new ValidationException("Start date cannot be after end date");
         }
         EquipmentResponse equipment = equipmentService.getById(createBookingRequest.equipmentId());
@@ -47,7 +42,10 @@ public class BookingServiceImpl implements BookingService {
 
         BookingEntity bookingEntity = bookingMapper.toBookingEntity(createBookingRequest, currentClientId, totalCostKes);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
-        eventPublisher.publishEvent(new BookingCreatedEvent(savedBooking.bookingId,savedBooking.equipmentId, Instant.now()));
+
+        equipmentService.markAsHired(savedBooking.getEquipmentId());
+        eventPublisher.publishEvent(new BookingCreatedEvent(savedBooking.getBookingId(), savedBooking.getEquipmentId(), Instant.now()));
+
         return bookingMapper.toBookingResponse(savedBooking);
     }
 
@@ -55,8 +53,8 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse getById(Long bookingId, Long currentUserId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)
                 .orElseThrow(NotFoundException::new);
-        EquipmentResponse equipment = equipmentService.getById(bookingEntity.equipmentId);
-        if(!Objects.equals(bookingEntity.clientId, currentUserId) && !Objects.equals(equipment.ownerId(), currentUserId)){
+        EquipmentResponse equipment = equipmentService.getById(bookingEntity.getEquipmentId());
+        if (!Objects.equals(bookingEntity.getClientId(), currentUserId) && !Objects.equals(equipment.ownerId(), currentUserId)) {
             throw new ForbiddenException();
         }
         return bookingMapper.toBookingResponse(bookingEntity);
@@ -75,14 +73,14 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse confirm(Long bookingId, Long currentOwnerId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)
                 .orElseThrow(NotFoundException::new);
-        EquipmentResponse equipment = equipmentService.getById(bookingEntity.equipmentId);
-        if (!Objects.equals(equipment.ownerId(), currentOwnerId)){
+        EquipmentResponse equipment = equipmentService.getById(bookingEntity.getEquipmentId());
+        if (!Objects.equals(equipment.ownerId(), currentOwnerId)) {
             throw new ForbiddenException();
         }
-        if (bookingEntity.status != BookingEntity.BookingStatus.PENDING){
+        if (bookingEntity.getStatus() != BookingStatus.PENDING) {
             throw new ConflictException("Only PENDING booking can be confirmed");
         }
-        bookingEntity.setStatus(BookingEntity.BookingStatus.CONFIRMED);
+        bookingEntity.setStatus(BookingStatus.CONFIRMED);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
         return bookingMapper.toBookingResponse(savedBooking);
     }
@@ -92,21 +90,24 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse cancel(Long bookingId, Long currentUserId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)
                 .orElseThrow(NotFoundException::new);
-        EquipmentResponse equipment = equipmentService.getById(bookingEntity.equipmentId);
-        boolean isClient = Objects.equals(bookingEntity.clientId,  currentUserId);
-        boolean isOwner = Objects.equals(equipment.ownerId(),currentUserId);
-        if (!isClient && !isOwner){
+        EquipmentResponse equipment = equipmentService.getById(bookingEntity.getEquipmentId());
+        boolean isClient = Objects.equals(bookingEntity.getClientId(), currentUserId);
+        boolean isOwner = Objects.equals(equipment.ownerId(), currentUserId);
+        if (!isClient && !isOwner) {
             throw new ForbiddenException();
         }
-        if (bookingEntity.status == BookingEntity.BookingStatus.COMPLETED){
-            throw new ConflictException("Completed Booking can be cancelled");
+        if (bookingEntity.getStatus() == BookingStatus.COMPLETED) {
+            throw new ConflictException("Completed Booking cannot be cancelled");
         }
-        if (bookingEntity.status == BookingEntity.BookingStatus.CANCELLED){
-            throw new ConflictException("Cancelled Booking can be cancelled");
+        if (bookingEntity.getStatus() == BookingStatus.CANCELLED) {
+            throw new ConflictException("Booking is already cancelled");
         }
-        bookingEntity.setStatus(BookingEntity.BookingStatus.CANCELLED);
+        bookingEntity.setStatus(BookingStatus.CANCELLED);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
-        eventPublisher.publishEvent(new BookingCancelledEvent(savedBooking.bookingId,savedBooking.equipmentId,Instant.now()));
+
+        equipmentService.markAsAvailable(savedBooking.getEquipmentId());
+        eventPublisher.publishEvent(new BookingCancelledEvent(savedBooking.getBookingId(), savedBooking.getEquipmentId(), Instant.now()));
+
         return bookingMapper.toBookingResponse(savedBooking);
     }
 
@@ -115,17 +116,20 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse complete(Long bookingId, Long currentOwnerId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)
                 .orElseThrow(NotFoundException::new);
-        EquipmentResponse equipment = equipmentService.getById(bookingEntity.equipmentId);
-        if (!Objects.equals(equipment.ownerId(), currentOwnerId)){
+        EquipmentResponse equipment = equipmentService.getById(bookingEntity.getEquipmentId());
+        if (!Objects.equals(equipment.ownerId(), currentOwnerId)) {
             throw new ForbiddenException();
         }
-        if (bookingEntity.getStatus() != BookingEntity.BookingStatus.ACTIVE
-                && bookingEntity.getStatus() != BookingEntity.BookingStatus.CONFIRMED) {
+        if (bookingEntity.getStatus() != BookingStatus.ACTIVE
+                && bookingEntity.getStatus() != BookingStatus.CONFIRMED) {
             throw new ConflictException("Only ACTIVE or CONFIRMED bookings can be completed (current status: " + bookingEntity.getStatus() + ")");
         }
-        bookingEntity.setStatus(BookingEntity.BookingStatus.COMPLETED);
+        bookingEntity.setStatus(BookingStatus.COMPLETED);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
-        eventPublisher.publishEvent(new BookingCompletedEvent(savedBooking.bookingId,savedBooking.equipmentId,Instant.now()));
+
+        equipmentService.markAsAvailable(savedBooking.getEquipmentId());
+        eventPublisher.publishEvent(new BookingCompletedEvent(savedBooking.getBookingId(), savedBooking.getEquipmentId(), Instant.now()));
+
         return bookingMapper.toBookingResponse(savedBooking);
     }
 }

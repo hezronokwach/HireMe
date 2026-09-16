@@ -1,6 +1,5 @@
-package com.example.hireme.user.dto;
+package com.example.hireme.user;
 
-import com.example.hireme.user.internal.User.Role;
 import java.time.Instant;
 
 public record AuthResponse(

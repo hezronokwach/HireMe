@@ -1,10 +1,6 @@
 package com.example.hireme.equipment.internal;
 
-import com.example.hireme.equipment.EquipmentService;
-import com.example.hireme.equipment.dto.CreateEquipmentRequest;
-import com.example.hireme.equipment.dto.EquipmentResponse;
-import com.example.hireme.equipment.dto.UpdateEquipmentRequest;
-import com.example.hireme.equipment.events.EquipmentStatusChangedEvent;
+import com.example.hireme.equipment.*;
 import com.example.hireme.equipment.internal.exception.EquipmentNotFoundException;
 import com.example.hireme.equipment.internal.exception.ForbiddenException;
 import com.example.hireme.user.UserService;
@@ -15,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -23,7 +20,7 @@ public class EquipmentServiceImpl implements EquipmentService {
     private final EquipmentRepository equipmentRepository;
     private final EquipmentMapper equipmentMapper;
     private final UserService userService;
-    private final ApplicationEventPublisher  applicationEventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -44,7 +41,7 @@ public class EquipmentServiceImpl implements EquipmentService {
     }
 
     @Override
-    public List<EquipmentResponse> getAll(EquipmentEntity.Category categoryFilter) {
+    public List<EquipmentResponse> getAll(Category categoryFilter) {
         List<EquipmentEntity> equipment;
         if (categoryFilter != null) {
             equipment = equipmentRepository.findByCategory(categoryFilter);
@@ -64,7 +61,7 @@ public class EquipmentServiceImpl implements EquipmentService {
         if(!userService.isOwner(currentUserId)) {
             throw new ForbiddenException();
         }
-        if(equipmentEntity.status == EquipmentEntity.EquipmentStatus.HIRED) {
+        if(equipmentEntity.getStatus() == EquipmentStatus.HIRED) {
             throw new ForbiddenException();
         }
         equipmentMapper.applyUpdate(equipmentEntity, updateEquipmentRequest);
@@ -80,7 +77,7 @@ public class EquipmentServiceImpl implements EquipmentService {
         if(!userService.isOwner(currentUserId)) {
             throw new ForbiddenException();
         }
-        if(equipmentEntity.status == EquipmentEntity.EquipmentStatus.HIRED) {
+        if(equipmentEntity.getStatus() == EquipmentStatus.HIRED) {
             throw new ForbiddenException();
         }
         equipmentRepository.delete(equipmentEntity);
@@ -90,7 +87,7 @@ public class EquipmentServiceImpl implements EquipmentService {
     public boolean isAvailable(Long equipmentId) {
         EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
                 .orElseThrow(EquipmentNotFoundException::new);
-        return equipmentEntity.status == EquipmentEntity.EquipmentStatus.AVAILABLE;
+        return equipmentEntity.getStatus() == EquipmentStatus.AVAILABLE;
     }
 
     @Override
@@ -98,28 +95,28 @@ public class EquipmentServiceImpl implements EquipmentService {
     public void markAsHired(Long equipmentId) {
         EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
                 .orElseThrow(EquipmentNotFoundException::new);
-        equipmentEntity.setStatus(EquipmentEntity.EquipmentStatus.HIRED);
+        equipmentEntity.setStatus(EquipmentStatus.HIRED);
         equipmentRepository.save(equipmentEntity);
         applicationEventPublisher.publishEvent(
                 new EquipmentStatusChangedEvent(
                         equipmentId,
-                        EquipmentEntity.EquipmentStatus.HIRED,
+                        EquipmentStatus.HIRED,
                         Instant.now())
-        );    }
+        );
+    }
 
     @Override
     @Transactional
     public void markAsAvailable(Long equipmentId) {
         EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
                 .orElseThrow(EquipmentNotFoundException::new);
-        equipmentEntity.setStatus(EquipmentEntity.EquipmentStatus.AVAILABLE);
+        equipmentEntity.setStatus(EquipmentStatus.AVAILABLE);
         equipmentRepository.save(equipmentEntity);
         applicationEventPublisher.publishEvent(
                 new EquipmentStatusChangedEvent(
                         equipmentId,
-                        EquipmentEntity.EquipmentStatus.AVAILABLE,
+                        EquipmentStatus.AVAILABLE,
                         Instant.now())
         );
-
     }
 }
