@@ -11,6 +11,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -61,6 +63,16 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Validation failed", response.getBody().message());
         assertEquals("Email is required", response.getBody().errors().get("email"));
+    }
+
+    @Test
+    void handleAccessDeniedException_returnsForbidden() {
+        AuthorizationDeniedException ex = new AuthorizationDeniedException("Access Denied", new AuthorizationDecision(false));
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAccessDeniedException(ex);
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals(403, response.getBody().status());
     }
 
     @Test

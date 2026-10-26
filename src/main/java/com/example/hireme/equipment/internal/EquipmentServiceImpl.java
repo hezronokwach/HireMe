@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -62,7 +63,7 @@ public class EquipmentServiceImpl implements EquipmentService {
     public EquipmentResponse update(Long equipmentId, UpdateEquipmentRequest updateEquipmentRequest, Long currentUserId) {
         EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
                 .orElseThrow(EquipmentNotFoundException::new);
-        if(!userService.isOwner(currentUserId)) {
+        if (!canManage(equipmentEntity, currentUserId)) {
             throw new ForbiddenException();
         }
         if(equipmentEntity.getStatus() == EquipmentStatus.HIRED) {
@@ -78,13 +79,17 @@ public class EquipmentServiceImpl implements EquipmentService {
     public void delete(Long equipmentId, Long currentUserId) {
         EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
                 .orElseThrow(EquipmentNotFoundException::new);
-        if(!userService.isOwner(currentUserId)) {
+        if (!canManage(equipmentEntity, currentUserId)) {
             throw new ForbiddenException();
         }
         if(equipmentEntity.getStatus() == EquipmentStatus.HIRED) {
             throw new ForbiddenException();
         }
         equipmentRepository.delete(equipmentEntity);
+    }
+
+    private boolean canManage(EquipmentEntity equipmentEntity, Long currentUserId) {
+        return Objects.equals(equipmentEntity.getOwnerId(), currentUserId) || userService.isAdmin(currentUserId);
     }
 
     @Override

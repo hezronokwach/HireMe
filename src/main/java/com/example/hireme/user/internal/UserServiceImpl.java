@@ -39,6 +39,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public boolean isAdmin(Long userId) {
+        return userRepository.findById(userId)
+                .map(user -> user.getRole() == Role.ADMIN)
+                .orElse(false);
+    }
+
+    @Override
     public UserResponse getProfile(Long userId) {
         return userRepository.findById(userId)
                 .map(userMapper::toResponse)

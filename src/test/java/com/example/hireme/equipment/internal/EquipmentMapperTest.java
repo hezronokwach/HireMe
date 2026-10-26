@@ -74,4 +74,34 @@ class EquipmentMapperTest {
         assertEquals("New Location", entity.getLocation());
         assertNotNull(entity.getUpdatedAt());
     }
+
+    @Test
+    void applyUpdate_nullFields_keepsExistingValues() {
+        EquipmentEntity entity = new EquipmentEntity();
+        entity.setName("Old Name");
+        entity.setCategory(Category.HEAVY_MACHINERY);
+        entity.setDescription("Old Desc");
+        entity.setDailyRateKes(BigDecimal.valueOf(500));
+        entity.setLocation("Old Location");
+
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest(null, null, null, BigDecimal.valueOf(800), null);
+
+        equipmentMapper.applyUpdate(entity, request);
+
+        assertEquals("Old Name", entity.getName());
+        assertEquals(Category.HEAVY_MACHINERY, entity.getCategory());
+        assertEquals("Old Desc", entity.getDescription());
+        assertEquals(BigDecimal.valueOf(800), entity.getDailyRateKes());
+        assertEquals("Old Location", entity.getLocation());
+    }
+
+    @Test
+    void applyUpdate_category_updatesCategory() {
+        EquipmentEntity entity = new EquipmentEntity();
+        entity.setCategory(Category.HEAVY_MACHINERY);
+
+        equipmentMapper.applyUpdate(entity, new UpdateEquipmentRequest(null, Category.AGRICULTURAL, null, null, null));
+
+        assertEquals(Category.AGRICULTURAL, entity.getCategory());
+    }
 }

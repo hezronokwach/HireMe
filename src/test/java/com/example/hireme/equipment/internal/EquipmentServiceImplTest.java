@@ -133,7 +133,6 @@ class EquipmentServiceImplTest {
         EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
         EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
-        when(userService.isOwner(1L)).thenReturn(true);
         when(equipmentRepository.save(entity)).thenReturn(entity);
         when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
 
@@ -143,17 +142,32 @@ class EquipmentServiceImplTest {
     }
 
     @Test
-    void update_notOwner_throwsForbidden() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
-        when(userService.isOwner(1L)).thenReturn(false);
+    void update_adminNotListingOwner_returnsUpdated() {
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null);
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(userService.isAdmin(2L)).thenReturn(true);
+        when(equipmentRepository.save(entity)).thenReturn(entity);
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
 
-        assertThrows(ForbiddenException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null), 1L));
+        EquipmentResponse result = equipmentService.update(1L, request, 2L);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void update_notListingOwner_throwsForbidden() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+        when(userService.isAdmin(2L)).thenReturn(false);
+
+        assertThrows(ForbiddenException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null), 2L));
+        verify(equipmentRepository, never()).save(any());
     }
 
     @Test
     void update_hiredEquipment_throwsForbidden() {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.HIRED)));
-        when(userService.isOwner(1L)).thenReturn(true);
 
         assertThrows(ForbiddenException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null), 1L));
     }
@@ -169,7 +183,6 @@ class EquipmentServiceImplTest {
     void delete_ownerAndAvailable_deletes() {
         EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
-        when(userService.isOwner(1L)).thenReturn(true);
 
         equipmentService.delete(1L, 1L);
 
@@ -177,17 +190,28 @@ class EquipmentServiceImplTest {
     }
 
     @Test
-    void delete_notOwner_throwsForbidden() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
-        when(userService.isOwner(1L)).thenReturn(false);
+    void delete_adminNotListingOwner_deletes() {
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(userService.isAdmin(2L)).thenReturn(true);
 
-        assertThrows(ForbiddenException.class, () -> equipmentService.delete(1L, 1L));
+        equipmentService.delete(1L, 2L);
+
+        verify(equipmentRepository).delete(entity);
+    }
+
+    @Test
+    void delete_notListingOwner_throwsForbidden() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+        when(userService.isAdmin(2L)).thenReturn(false);
+
+        assertThrows(ForbiddenException.class, () -> equipmentService.delete(1L, 2L));
+        verify(equipmentRepository, never()).delete(any());
     }
 
     @Test
     void delete_hiredEquipment_throwsForbidden() {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.HIRED)));
-        when(userService.isOwner(1L)).thenReturn(true);
 
         assertThrows(ForbiddenException.class, () -> equipmentService.delete(1L, 1L));
     }

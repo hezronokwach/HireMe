@@ -95,6 +95,31 @@ class UserServiceImplTest {
     }
 
     @Test
+    void isAdmin_adminRole_returnsTrue() {
+        User user = new User();
+        user.setRole(Role.ADMIN);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        assertTrue(userService.isAdmin(1L));
+    }
+
+    @Test
+    void isAdmin_ownerRole_returnsFalse() {
+        User user = new User();
+        user.setRole(Role.OWNER);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        assertFalse(userService.isAdmin(1L));
+    }
+
+    @Test
+    void isAdmin_userNotFound_returnsFalse() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertFalse(userService.isAdmin(1L));
+    }
+
+    @Test
     void getProfile_existingUser_returnsResponse() {
         User user = new User();
         user.setId(1L);
