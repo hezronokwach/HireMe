@@ -213,7 +213,7 @@ Response (`AuthResponse`):
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "token": "<jwt-token>",
   "userId": 1,
   "role": "OWNER",
   "expiresAt": "2026-10-27T08:00:00Z"
