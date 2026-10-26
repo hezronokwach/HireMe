@@ -25,7 +25,7 @@ class ExceptionClassesTest {
     void bookingForbiddenException_setsMessageAndStatus() {
         ForbiddenException ex = new ForbiddenException();
         assertEquals("You are not authorized to perform this action", ex.getMessage());
-        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
     }
 
     @Test
@@ -39,7 +39,7 @@ class ExceptionClassesTest {
     void validationException_setsMessageAndStatus() {
         ValidationException ex = new ValidationException("Invalid input");
         assertEquals("Invalid input", ex.getMessage());
-        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
     }
 
     @Test

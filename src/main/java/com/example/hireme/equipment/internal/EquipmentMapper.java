@@ -39,10 +39,21 @@ public class EquipmentMapper {
     }
 
     public void applyUpdate(EquipmentEntity existingEquipment, UpdateEquipmentRequest updateEquipmentRequest) {
-        existingEquipment.setName(updateEquipmentRequest.name());
-        existingEquipment.setDescription(updateEquipmentRequest.description());
-        existingEquipment.setDailyRateKes(updateEquipmentRequest.dailyRateKes());
-        existingEquipment.setLocation(updateEquipmentRequest.location());
+        if (updateEquipmentRequest.name() != null) {
+            existingEquipment.setName(updateEquipmentRequest.name());
+        }
+        if (updateEquipmentRequest.category() != null) {
+            existingEquipment.setCategory(updateEquipmentRequest.category());
+        }
+        if (updateEquipmentRequest.description() != null) {
+            existingEquipment.setDescription(updateEquipmentRequest.description());
+        }
+        if (updateEquipmentRequest.dailyRateKes() != null) {
+            existingEquipment.setDailyRateKes(updateEquipmentRequest.dailyRateKes());
+        }
+        if (updateEquipmentRequest.location() != null) {
+            existingEquipment.setLocation(updateEquipmentRequest.location());
+        }
         existingEquipment.setUpdatedAt(Instant.now());
     }
 }

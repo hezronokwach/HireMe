@@ -90,7 +90,7 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
 | Field         | Notes                                                    |
 |---------------|----------------------------------------------------------|
 | `id`          | Generated                                                |
-| `fullName`    | Required, unique                                         |
+| `fullName`    | Required (does not have to be unique)                    |
 | `email`       | Required, unique, used as the login username             |
 | `phoneNumber` | Required, unique, must be a Kenyan mobile number (`07XXXXXXXX` or `+2547XXXXXXXX`) |
 | `passwordHash`| BCrypt hash; the raw password must be at least 8 characters |
@@ -229,8 +229,8 @@ Returns `401` for a wrong email or password.
 | `POST`   | `/equipment`      | OWNER, ADMIN   | Create a listing (`201`). The caller becomes the owner. |
 | `GET`    | `/equipment`      | Authenticated  | List all equipment. Optional `?category=HEAVY_MACHINERY` filter. |
 | `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
-| `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing. Refused (`403`) while it is `HIRED`. |
-| `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing (`204`). Refused (`403`) while it is `HIRED`. |
+| `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed. Refused (`403`) while it is `HIRED`. |
+| `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`403`) while it is `HIRED`. |
 
 Create request (`CreateEquipmentRequest`):
 
@@ -344,8 +344,9 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 }
 ```
 
-- **Domain exceptions** extend `BaseException`, which carries its own HTTP status. Examples are `UserAlreadyExistsException` (409), `InvalidCredentialsException` (401), `EquipmentNotFoundException` (404) and the booking `NotFoundException` (404) and `ConflictException` (409).
+- **Domain exceptions** extend `BaseException`, which carries its own HTTP status. Examples are `UserAlreadyExistsException` (409), `InvalidCredentialsException` (401), `EquipmentNotFoundException` (404) and the booking `NotFoundException` (404), `ConflictException` (409), `ForbiddenException` (403) and `ValidationException` (400).
 - **Bean Validation failures** return `400`, with one entry per field in `errors`.
+- **Authorisation failures** (`AccessDeniedException`, including those raised by `@PreAuthorize`) return `403`.
 - **Anything else** returns `500` with the message `An unexpected error occurred: ...`.
 
 ---
@@ -545,14 +546,8 @@ HireMe/
 
 These are behaviours of the current code that you should know about when you work on or consume the API:
 
-- **Docker image JDK version:** the `Dockerfile` builds and runs on Eclipse Temurin **21**, but `pom.xml` targets Java **25**. The images need to move to a JDK 25 base for the container build to compile.
-- **Equipment ownership on update/delete:** the service checks that the caller has the `OWNER`/`ADMIN` role, but not that the caller owns *that* listing.
-- **Full replacement on update:** `PUT /equipment/{id}` overwrites `name`, `description`, `dailyRateKes` and `location` with the values sent, so a field left out becomes `null`. `category` is not updated.
 - **Equipment is reserved when the booking is created:** the equipment becomes `HIRED` as soon as a booking is created (while it is `PENDING`), not when the owner confirms it. Availability is a single status flag and does not look at date ranges.
 - **`ACTIVE` booking status** exists but is never set.
-- **Booking error codes:** in the booking module, `ForbiddenException` and `ValidationException` return `409 Conflict` instead of `403` and `400`.
-- **Authorisation failures from `@PreAuthorize`** are caught by the catch-all handler and come back as `500` instead of `403`.
-- **`fullName` is unique** in the `users` table, so two users cannot share a name.
 
 ---
 
