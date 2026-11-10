@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindingResult;
@@ -30,6 +31,17 @@ class GlobalExceptionHandlerTest {
 
     @InjectMocks
     private GlobalExceptionHandler exceptionHandler;
+
+    @Test
+    void handleOptimisticLockingFailure_returnsConflict() {
+        ObjectOptimisticLockingFailureException ex = new ObjectOptimisticLockingFailureException("BookingEntity", 1L);
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleOptimisticLockingFailure(ex);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals(409, response.getBody().status());
+        assertTrue(response.getBody().message().contains("changed by someone else"));
+    }
 
     @Test
     void handleBaseException_conflictException_returnsConflict() {

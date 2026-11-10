@@ -32,4 +32,9 @@ public class BookingEntity {
     private BookingStatus status;
 
     private Instant creationDate;
+
+    // Optimistic locking: if someone else saved the booking since it was read, the save fails
+    // (409 via GlobalExceptionHandler) instead of overwriting their change.
+    @Version
+    private Long version;
 }
