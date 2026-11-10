@@ -278,6 +278,7 @@ The update request (`UpdateEquipmentRequest`) has the same fields, and none of t
 |--------|----------------------------|----------------|---------------------------------------------------------|
 | `POST` | `/bookings`                | CLIENT, ADMIN  | Book equipment (`201`). Equipment must be `AVAILABLE`.  |
 | `GET`  | `/bookings/my-bookings`    | CLIENT, ADMIN  | List the caller's bookings.                             |
+| `GET`  | `/bookings/for-my-equipment` | OWNER, ADMIN | List bookings on the caller's equipment. Optional `?status=PENDING` filter. |
 | `GET`  | `/bookings/{id}`           | Authenticated  | Get a booking. Only its client or the equipment owner may view it. |
 | `PUT`  | `/bookings/{id}/confirm`   | OWNER, ADMIN   | Confirm a `PENDING` booking (equipment owner only).    |
 | `PUT`  | `/bookings/{id}/complete`  | OWNER, ADMIN   | Complete a `CONFIRMED`/`ACTIVE` booking (equipment owner only). |
@@ -357,6 +358,7 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 
 - **Domain exceptions** extend `BaseException`, which carries its own HTTP status. Examples are `UserAlreadyExistsException` (409), `InvalidCredentialsException` (401), `EquipmentNotFoundException` (404) and the booking `NotFoundException` (404), `ConflictException` (409), `ForbiddenException` (403) and `ValidationException` (400).
 - **Bean Validation failures** return `400`, with one entry per field in `errors`.
+- **Invalid path or query parameters**, such as `?status=FOO`, return `400` with the parameter name in `message`.
 - **Authorisation failures** (`AccessDeniedException`, including those raised by `@PreAuthorize`) return `403`.
 - **Anything else** returns `500` with the message `An unexpected error occurred: ...`.
 
