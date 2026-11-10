@@ -27,6 +27,7 @@ public class EquipmentEntity {
     @Enumerated(EnumType.STRING)
     private Category category;
 
+    @Column(length = 1000)
     private String description;
     private BigDecimal dailyRateKes;
     private String location;

@@ -115,7 +115,7 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
 | `ownerId`      | The user who created the listing                   |
 | `name`         | Required                                           |
 | `category`     | `HEAVY_MACHINERY`, `AGRICULTURAL`, `EVENT_SETUP`   |
-| `description`  | Optional                                           |
+| `description`  | Optional, at most 1000 characters (`name` and `location` at most 255) |
 | `dailyRateKes` | Required, must be greater than zero                |
 | `location`     | Required                                           |
 | `status`       | `AVAILABLE` (default) or `UNDER_MAINTENANCE`, set by the owner. Says whether the listing takes bookings; booked dates come from bookings (see [Availability](#availability)) |
@@ -178,6 +178,13 @@ The `ai` module is the one place that talks to a language model. It uses [Groq](
 - **Off by default.** It's on only with `HIREME_AI_ENABLED=true`, which also needs `GROQ_API_KEY`. The app refuses to start if AI is enabled without a key. While it's off, the app works normally and AI calls return `503`.
 - **Failures don't spread.** If Groq is down, slow (`hireme.ai.timeout`, default 20 s), rate-limiting us, or returns an unusable answer, the call fails with `503` ("AI features are unavailable right now") after `hireme.ai.max-retries` retries. Features with a non-AI fallback can catch `AiUnavailableException`.
 - **Per-user rate limit:** `hireme.ai.requests-per-minute` (default 10) AI calls per user in any rolling minute, then `429`. It protects the shared Groq quota. It's kept in memory, so it applies per app instance and resets on restart.
+- **`POST /api/v1/equipment/ai/describe`** (OWNER, ADMIN) drafts a listing from a few details, for example `{"name": "Massey Ferguson 375", "category": "AGRICULTURAL", "location": "Nakuru", "notes": "2019, 75 hp, with operator"}`. It returns a `title` (at most 80 characters) and a `description` (at most 600). It also returns a `suggestedDailyRateKes` with a one-line `rateReason`, based on up to 20 listings in the same category (nearby first, `comparableListings` says how many). **Nothing is saved:** the owner accepts or edits the draft and then creates the listing as usual. The answer is checked before it is returned:
+  - **Missing text:** a draft without a title or description is treated as a failed call (`503`).
+  - **Long text:** it is cut on a word boundary to fit.
+  - **No comparables:** there is no rate suggestion.
+  - **Out-of-range rate:** a rate below half the cheapest or above twice the dearest comparable listing is dropped.
+
+  The prompts live in `src/main/resources/prompts/` (`describe-equipment.st`, `describe-equipment-request.st`). The owner's notes are passed as information, and the model is told to ignore any instructions inside them.
 - **`GET /api/v1/ai/status`** returns `{ "enabled": true, "model": "...", "requestsPerMinute": 10 }`, so the frontend can hide AI buttons when they would only fail.
 
 To turn it on, get a key at [console.groq.com/keys](https://console.groq.com/keys) and add it to `.env` (which is gitignored; never commit a key, and Gitleaks scans every PR):
@@ -284,6 +291,7 @@ Returns `401` for a wrong email or password.
 | `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
 | `GET`    | `/equipment/{id}/availability` | Authenticated | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
 | `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed; send `"status": "UNDER_MAINTENANCE"` to stop new bookings. |
+| `POST`   | `/equipment/ai/describe` | OWNER, ADMIN | Draft a title, description and daily rate with AI (see [AI Features](#ai-features)). Nothing is saved. |
 | `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`409`) while it has `PENDING`, `CONFIRMED` or `ACTIVE` bookings that end today or later. |
 
 Create request (`CreateEquipmentRequest`):
