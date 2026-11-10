@@ -28,7 +28,7 @@ import java.util.List;
 @EnableWebSecurity
 @org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 public class SecurityConfig {
-    @Value("${app.frontend-url:http://localhost:5173}")
+    @Value("${app.frontend-url:http://localhost:4200}")
     private String frontendUrl;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;

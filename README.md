@@ -4,6 +4,8 @@ HireMe is a REST API for hiring out equipment. Equipment owners list machinery (
 
 It is a Spring Boot **modular monolith**: one deployable application split into modules (`user`, `equipment`, `booking`, `shared`). Spring Modulith enforces the module boundaries and carries events between modules.
 
+An Angular web app for it lives in [`frontend/`](frontend/) (see [Frontend](#frontend)).
+
 ---
 
 ## Table of Contents
@@ -16,6 +18,7 @@ It is a Spring Boot **modular monolith**: one deployable application split into 
 - [AI Features](#ai-features)
 - [API Reference](#api-reference)
 - [Error Handling](#error-handling)
+- [Frontend](#frontend)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
 - [Testing](#testing)
@@ -37,6 +40,7 @@ It is a Spring Boot **modular monolith**: one deployable application split into 
 | Boilerplate        | Lombok                                                  |
 | Build              | Maven (wrapper included)                                |
 | Quality            | JaCoCo, SonarCloud, Qodana, Gitleaks, Trivy             |
+| Frontend           | Angular 22 (standalone components, signals, zoneless), Angular Material, Vitest, ESLint; API client generated with OpenAPI Generator |
 | Containerisation   | Docker multi-stage build and Docker Compose             |
 
 ---
@@ -213,7 +217,7 @@ GROQ_API_KEY=<your Groq key>
 - `JwtAuthenticationFilter` validates the token, loads the user through `CustomUserDetailsService` and fills in the security context. Roles become authorities with a `ROLE_` prefix (`ROLE_CLIENT`, `ROLE_OWNER`, `ROLE_ADMIN`).
 - **Authorisation** uses `@PreAuthorize` on each endpoint (method security is enabled). Ownership checks, such as "is this your equipment?", happen in the service layer.
 - **Public routes:** `/api/v1/auth/**`, `/actuator/**` and the API docs (`/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`). Every other route needs a valid token.
-- **CORS** allows only `app.frontend-url` (default `http://localhost:5173`), with credentials, for `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
+- **CORS** allows only `app.frontend-url` (default `http://localhost:4200`, set with `FRONTEND_URL`), with credentials, for `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 - **CSRF** uses a cookie-based token repository (`XSRF-TOKEN` cookie, `X-XSRF-TOKEN` header) for non-API routes. It is turned off for `/api/v1/**` and `/actuator/**` because those requests use bearer tokens, not cookies.
 - Passwords are hashed with BCrypt.
 
@@ -470,6 +474,52 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 
 ---
 
+## Frontend
+
+The web app lives in [`frontend/`](frontend/). It is an Angular 22 app (standalone components, signals, no zone.js) styled with Angular Material.
+
+So far it covers accounts. The listing, booking and owner pages come next (#15–#17).
+
+- **Register** (`/register`): the user picks "I want to hire equipment" (`CLIENT`) or "I have equipment to rent out" (`OWNER`). The phone number must be a Kenyan mobile number (`07XXXXXXXX` or `+2547XXXXXXXX`, the same rule as the API); spaces and dashes are allowed. The user is signed in right after.
+- **Log in** (`/login`): afterwards the user goes back to the page that sent them there (`?returnUrl=`, only paths inside the app).
+- **Session**: the JWT, user id, role and email (from the token's subject) are kept in `localStorage`, so a reload stays signed in. The session ends by itself when the token expires. The header shows the user and a **Log out** button.
+- **Interceptor**: adds `Authorization: Bearer <token>` to requests for the backend only, never to other hosts. When the backend answers `401` to a signed-in request, it signs the user out and opens the login page.
+- **Guards**: `authGuard` (signed in), `guestGuard` (keeps signed-in users off login and register) and `roleGuard('OWNER', 'ADMIN')` for role-only pages.
+
+### Running it
+
+```bash
+cd frontend
+npm ci
+npm start                     # http://localhost:4200
+```
+
+The dev server sends `/api` to the backend on `http://localhost:8080` (`proxy.conf.json`), so the browser sees one origin. To call a backend on another origin instead, set `apiUrl` in `src/environments/environment.ts` and set that backend's `FRONTEND_URL` to the app's origin for CORS.
+
+`docker compose up --build` also builds the app into an nginx image (`web`, on **http://localhost:8081**), which serves it and forwards `/api` to the `app` service.
+
+| Command | What it does |
+|---------|--------------|
+| `npm start` | Dev server with live reload |
+| `npm test` | Unit tests (Vitest); `npx ng test --watch=false` runs them once |
+| `npm run lint` | ESLint, including the Angular template and accessibility rules |
+| `npm run format:check` | Prettier check |
+| `npm run build` | Production build in `dist/frontend/browser` |
+
+### The API client
+
+`src/app/api/` is generated from the backend's OpenAPI document (`openapi/hireme-api.json`) by OpenAPI Generator (`typescript-angular`, version pinned in `openapitools.json`). It holds one service per tag (`AuthService`, `EquipmentService`, `BookingsService`, `AIService`) and a TypeScript interface per DTO. Don't edit these files by hand. When the API changes:
+
+```bash
+npm run api:fetch                             # from a backend running on :8080
+npm run api:fetch -- ../target/openapi.json   # or from the file ./mvnw test writes
+npm run api:generate                          # needs Java on the PATH
+```
+
+Commit the updated `openapi/hireme-api.json` together with the regenerated client. The TypeScript compiler then flags any code that no longer matches the API.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -507,6 +557,7 @@ This starts:
 
 - `postgres`: PostgreSQL 16, database `equipment_hiring`, published on host port **5433**
 - `app`: the API on **http://localhost:8080**, using the `docker` profile (`application-docker.yml`)
+- `web`: the Angular app on **http://localhost:8081**, served by nginx, which forwards `/api` to `app` (see [Frontend](#frontend))
 
 ### 2b. Run the API locally against a Dockerised database
 
@@ -536,7 +587,7 @@ app:
   jwt:
     secret: <at least 32 characters>
     expiration-ms: 86400000
-  frontend-url: http://localhost:5173
+  frontend-url: http://localhost:4200
 ```
 
 Then run:
@@ -567,7 +618,7 @@ java -jar target/HireMe-0.0.1-SNAPSHOT.jar
 | `spring.datasource.password` | `DB_PASSWORD`    | n/a                      | Database password                             |
 | `app.jwt.secret`         | `JWT_SECRET`         | n/a                      | HMAC signing key (at least 32 bytes)          |
 | `app.jwt.expiration-ms`  | n/a                  | `86400000` (24 h)        | Token lifetime                                |
-| `app.frontend-url`       | n/a                  | `http://localhost:5173`  | The only origin CORS allows                   |
+| `app.frontend-url`       | `FRONTEND_URL`       | `http://localhost:4200`  | The only origin CORS allows                   |
 | `app.time-zone`          | n/a                  | `Africa/Nairobi`         | Business time zone: what "today" means for bookings |
 | `app.bookings.activation-cron` | n/a            | `0 5 * * * *` (hourly)   | When confirmed bookings are checked for activation |
 | `springdoc.api-docs.enabled` / `springdoc.swagger-ui.enabled` | n/a | `true` | Serve the OpenAPI spec and Swagger UI; set to `false` to turn them off |
@@ -645,6 +696,10 @@ Runs on pushes to `staging` and `main`:
 1. **Build & analyse**: `verify` plus a SonarCloud branch analysis, then the JAR is packaged and uploaded as a build artifact
 2. **Deploy to Staging** (on `staging`) or **Deploy to Production** (on `main`), each in a GitHub environment. The deploy steps are placeholders for now.
 
+### `frontend.yml`: Frontend
+
+Runs on pull requests and pushes to `staging` and `main` that touch `frontend/`. It runs `npm ci`, ESLint, the Prettier check, the unit tests and a production build on Node 24.
+
 ### Branching model
 
 ```
@@ -681,8 +736,14 @@ HireMe/
 │       └── security/         SecurityConfig, JwtTokenProvider, JwtAuthenticationFilter
 ├── src/main/resources/       application.properties, application-docker.yml
 ├── src/test/                 Unit + modularity tests (H2)
+├── frontend/                 Angular app (see Frontend)
+│   ├── src/app/api/          Generated API client (npm run api:generate)
+│   ├── src/app/core/auth/    AuthService (session), interceptor, guards
+│   ├── src/app/pages/        Login, register, home
+│   ├── openapi/              Copy of the backend's OpenAPI document
+│   └── Dockerfile, nginx.conf
 ├── Dockerfile                Multi-stage build (Maven build → JRE runtime, non-root user)
-├── docker-compose.yml        PostgreSQL + app
+├── docker-compose.yml        PostgreSQL + app + web
 ├── .env.example              Template for required environment variables
 ├── qodana.yaml               Qodana configuration
 └── pom.xml
