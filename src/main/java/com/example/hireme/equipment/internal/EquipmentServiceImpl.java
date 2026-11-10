@@ -93,6 +93,11 @@ public class EquipmentServiceImpl implements EquipmentService {
     }
 
     @Override
+    public List<Long> getIdsByOwner(Long ownerId) {
+        return equipmentRepository.findIdsByOwnerId(ownerId);
+    }
+
+    @Override
     public boolean isAvailable(Long equipmentId) {
         EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
                 .orElseThrow(EquipmentNotFoundException::new);
