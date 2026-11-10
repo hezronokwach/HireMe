@@ -33,8 +33,9 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
     List<BookingEntity> findByStatusAndStartDateLessThanEqual(BookingStatus status, LocalDate date);
 
     // Changes the status only if it is still `from`; returns 1 when it did, 0 when the booking had moved on.
+    // Bulk updates skip @Version, so bump it here: anyone holding the old version then gets a conflict.
     @Modifying
-    @Query("update BookingEntity b set b.status = :to where b.bookingId = :bookingId and b.status = :from")
+    @Query("update BookingEntity b set b.status = :to, b.version = b.version + 1 where b.bookingId = :bookingId and b.status = :from")
     int updateStatus(@Param("bookingId") Long bookingId,
                      @Param("from") BookingStatus from,
                      @Param("to") BookingStatus to);

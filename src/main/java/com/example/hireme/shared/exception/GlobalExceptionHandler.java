@@ -1,5 +1,6 @@
 package com.example.hireme.shared.exception;
 
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -54,6 +55,18 @@ public class GlobalExceptionHandler {
             null
         );
         return ResponseEntity.badRequest().body(response);
+    }
+
+    // Raised on commit when an entity with @Version was saved by someone else after it was read.
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(OptimisticLockingFailureException ex) {
+        ErrorResponse response = new ErrorResponse(
+            409,
+            "This record was changed by someone else at the same time. Reload it and try again.",
+            Instant.now(),
+            null
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
