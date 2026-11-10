@@ -32,7 +32,7 @@ It is a Spring Boot **modular monolith**: one deployable application split into 
 | Language           | Java 25                                                 |
 | Framework          | Spring Boot 4.1 (Web, Data JPA, Validation, Security, Actuator) |
 | Modularity         | Spring Modulith 2.1 (core, JPA event publication registry) |
-| Database           | PostgreSQL 16 (H2 in tests)                             |
+| Database           | PostgreSQL 16 (H2 in tests), Flyway migrations          |
 | Authentication     | JWT (jjwt 0.12) and BCrypt password hashing             |
 | Boilerplate        | Lombok                                                  |
 | Build              | Maven (wrapper included)                                |
@@ -71,7 +71,7 @@ Because `spring-modulith-starter-jpa` is on the classpath, published events are 
 
 ### Database schemas
 
-Each module owns its own PostgreSQL schema. Hibernate creates the schemas (`hbm2ddl.create_namespaces: true`) and the tables (`ddl-auto: update`):
+Each module owns its own PostgreSQL schema. [Flyway](https://flywaydb.org) creates the schemas and tables from the migrations in `src/main/resources/db/migration`, and Hibernate only checks that the entities match them (`ddl-auto: validate`):
 
 | Module    | Schema          | Table       |
 |-----------|-----------------|-------------|
@@ -80,6 +80,17 @@ Each module owns its own PostgreSQL schema. Hibernate creates the schemas (`hbm2
 | booking   | `app_booking`   | `bookings`  |
 
 Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `clientId`). There are no foreign keys or JPA relationships between modules.
+
+### Migrations
+
+| Folder                         | Runs on            | Contents                                                     |
+|--------------------------------|--------------------|--------------------------------------------------------------|
+| `db/migration/common`          | Every database     | Portable SQL, e.g. `V1__baseline.sql` (all tables)           |
+| `db/migration/postgresql`      | PostgreSQL only    | Scripts that need PostgreSQL features, e.g. `V2__drop_full_name_unique.sql` |
+
+- **Schema changes** go in a new script with the next version number, e.g. `V3__add_equipment_photos.sql`. Never edit a script that has already been applied: Flyway checks their checksums and refuses to start.
+- **Databases created before Flyway** (by Hibernate `ddl-auto: update`) are marked as version 1 on first start (`spring.flyway.baseline-on-migrate`), so `V1` is skipped and later scripts are applied. Their unique constraints have generated names such as `uk6dotkott2kjsp8vw4d0m25fb7`, so a migration that changes a constraint must look it up by column, as `V2` does.
+- **Tests** run on H2 and only use `db/migration/common` (H2 in PostgreSQL mode reports itself as PostgreSQL, so the vendor folder can't be used there).
 
 ---
 
@@ -407,12 +418,8 @@ spring:
     password: <your DB_PASSWORD>
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate   # Flyway owns the schema
     show-sql: true
-    properties:
-      hibernate:
-        hbm2ddl:
-          create_namespaces: true
 
 app:
   jwt:
@@ -472,7 +479,7 @@ The test suite covers:
 
 - **Unit tests** for every service implementation, mapper, controller, the JWT provider and filter, the user-details service, the exception classes, `GlobalExceptionHandler` and the event records.
 - **`ModularityTests`**, which checks the Spring Modulith module boundaries and fails the build on illegal cross-module access or dependency cycles.
-- **`HireMeApplicationTests`** (full context load), which is `@Disabled` by default because it needs a running PostgreSQL.
+- **`HireMeApplicationTests`**, which starts the full application on H2: Flyway runs the migrations and Hibernate validates every entity against the resulting schema, so a missing migration fails the build.
 
 Tests use H2 in memory with the settings in `src/test/resources/application.properties`.
 
