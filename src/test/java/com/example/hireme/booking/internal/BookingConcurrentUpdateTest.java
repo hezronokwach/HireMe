@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -68,7 +69,7 @@ class BookingConcurrentUpdateTest {
 
     @AfterEach
     void tearDown() {
-        bookingRepository.deleteAll(bookingRepository.findByEquipmentIdIn(List.of(equipmentId)));
+        bookingRepository.deleteAll(bookingRepository.findByEquipmentIdIn(List.of(equipmentId), Pageable.unpaged()).getContent());
         equipmentRepository.deleteById(equipmentId);
     }
 

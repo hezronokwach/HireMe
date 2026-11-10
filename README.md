@@ -242,7 +242,7 @@ Returns `401` for a wrong email or password.
 | Method   | Path              | Roles          | Description                                       |
 |----------|-------------------|----------------|---------------------------------------------------|
 | `POST`   | `/equipment`      | OWNER, ADMIN   | Create a listing (`201`). The caller becomes the owner. |
-| `GET`    | `/equipment`      | Authenticated  | List all equipment. Optional `?category=HEAVY_MACHINERY` filter. |
+| `GET`    | `/equipment`      | Authenticated  | Search equipment, one page at a time (see [Paging and filters](#paging-and-filters)). |
 | `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
 | `GET`    | `/equipment/{id}/availability` | Authenticated | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
 | `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed; send `"status": "UNDER_MAINTENANCE"` to stop new bookings. |
@@ -277,6 +277,33 @@ The update request (`UpdateEquipmentRequest`) has the same fields plus `status`,
 }
 ```
 
+#### Paging and filters
+
+`GET /equipment` takes these optional query parameters, which combine with AND:
+
+| Parameter  | Meaning                                                              |
+|------------|----------------------------------------------------------------------|
+| `category` | `HEAVY_MACHINERY`, `AGRICULTURAL` or `EVENT_SETUP`                   |
+| `location` | Case-insensitive "contains", e.g. `nakuru` matches `Nakuru Town`     |
+| `minRate` / `maxRate` | `dailyRateKes` range, both ends included                  |
+| `page`     | Zero-based page number (default `0`)                                 |
+| `size`     | Page size, 1 to 100 (default `20`)                                   |
+| `sort`     | `dailyRateKes`, `createdAt` or `name`, optionally `,asc` or `,desc` (default `createdAt,desc`, newest first) |
+
+`GET /equipment?category=AGRICULTURAL&location=nakuru&maxRate=8000&sort=dailyRateKes&page=0&size=2` returns a page (`PageResponse`):
+
+```json
+{
+  "content": [ { "id": 3, "name": "Tractor A", "dailyRateKes": 5000, "...": "..." } ],
+  "page": 0,
+  "size": 2,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+Rows with the same sort value are ordered by `id`, so they don't move between pages.
+
 Availability response (`EquipmentAvailabilityResponse`) for `GET /equipment/1/availability?from=2026-11-01&to=2026-11-30`. `available` is `false` when any day in the range is booked or the listing is under maintenance:
 
 ```json
@@ -296,8 +323,10 @@ Availability response (`EquipmentAvailabilityResponse`) for `GET /equipment/1/av
 | Method | Path                       | Roles          | Description                                             |
 |--------|----------------------------|----------------|---------------------------------------------------------|
 | `POST` | `/bookings`                | CLIENT, ADMIN  | Book equipment (`201`). `409` if the listing is under maintenance or the dates are already booked. |
-| `GET`  | `/bookings/my-bookings`    | CLIENT, ADMIN  | List the caller's bookings.                             |
-| `GET`  | `/bookings/for-my-equipment` | OWNER, ADMIN | List bookings on the caller's equipment. Optional `?status=PENDING` filter. |
+| `GET`  | `/bookings/my-bookings`    | CLIENT, ADMIN  | The caller's bookings, as a page. |
+| `GET`  | `/bookings/for-my-equipment` | OWNER, ADMIN | Bookings on the caller's equipment, as a page. Optional `?status=PENDING` filter. |
+
+Both booking lists take `page`, `size` (1 to 100, default 20) and `sort` (`startDate` or `creationDate`, optionally `,asc`/`,desc`; default `creationDate,desc`, newest first), and return the same `PageResponse` shape as the equipment list.
 | `GET`  | `/bookings/{id}`           | Authenticated  | Get a booking. Only its client or the equipment owner may view it. |
 | `PUT`  | `/bookings/{id}/confirm`   | OWNER, ADMIN   | Confirm a `PENDING` booking (equipment owner only).    |
 | `PUT`  | `/bookings/{id}/complete`  | OWNER, ADMIN   | Complete a `CONFIRMED`/`ACTIVE` booking (equipment owner only). |
@@ -377,6 +406,7 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 
 - **Domain exceptions** extend `BaseException`, which carries its own HTTP status. Examples are `UserAlreadyExistsException` (409), `InvalidCredentialsException` (401), `EquipmentNotFoundException` (404) and the booking `NotFoundException` (404), `ConflictException` (409), `ForbiddenException` (403) and `ValidationException` (400).
 - **Bean Validation failures** return `400`, with one entry per field in `errors`.
+- **Invalid query or path parameters** return `400` with the problem in `message`: a value that can't be converted (`?status=FOO`, `?page=abc`), or one that isn't allowed (`size` above 100, an unknown `sort` field, `minRate` above `maxRate`).
 - **Conflicting changes:** bookings carry a `version` (`@Version`, optimistic locking). If two requests change the same booking at once, for example a client cancelling while the owner confirms, the first one wins and the second gets `409` asking the caller to reload and try again, instead of silently overwriting it.
 - **Missing, invalid or expired tokens** on a protected endpoint return `401` with a `WWW-Authenticate: Bearer` header (`RestAuthenticationEntryPoint`).
 - **Authorisation failures** (a valid token without the required role, including `@PreAuthorize` checks) return `403`.

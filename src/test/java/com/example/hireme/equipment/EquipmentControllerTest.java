@@ -1,11 +1,16 @@
 package com.example.hireme.equipment;
 
+import com.example.hireme.shared.exception.InvalidRequestException;
+import com.example.hireme.shared.web.PageResponse;
 import com.example.hireme.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.User;
@@ -61,23 +66,42 @@ class EquipmentControllerTest {
     }
 
     @Test
-    void getAll_returnsList() {
-        when(equipmentService.getAll(null)).thenReturn(List.of(equipmentResponse()));
+    void search_defaults_newestFirstWithIdTieBreaker() {
+        PageResponse<EquipmentResponse> page = new PageResponse<>(List.of(equipmentResponse()), 0, 20, 1, 1);
+        Pageable expected = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by("id")));
+        when(equipmentService.search(EquipmentSearchCriteria.none(), expected)).thenReturn(page);
 
-        ResponseEntity<List<EquipmentResponse>> result = equipmentController.getAll(null);
+        ResponseEntity<PageResponse<EquipmentResponse>> result =
+                equipmentController.search(null, null, null, null, 0, 20, null);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
-        assertEquals(1, result.getBody().size());
+        assertSame(page, result.getBody());
     }
 
     @Test
-    void getAll_withCategory_returnsFilteredList() {
-        when(equipmentService.getAll(Category.HEAVY_MACHINERY)).thenReturn(List.of(equipmentResponse()));
+    void search_passesFiltersPageAndSort() {
+        EquipmentSearchCriteria criteria = new EquipmentSearchCriteria(Category.AGRICULTURAL, "nakuru",
+                BigDecimal.valueOf(1000), BigDecimal.valueOf(8000));
+        Pageable expected = PageRequest.of(2, 10, Sort.by(Sort.Direction.ASC, "dailyRateKes").and(Sort.by("id")));
+        when(equipmentService.search(criteria, expected)).thenReturn(new PageResponse<>(List.of(), 2, 10, 0, 0));
 
-        ResponseEntity<List<EquipmentResponse>> result = equipmentController.getAll(Category.HEAVY_MACHINERY);
+        equipmentController.search(Category.AGRICULTURAL, "nakuru", BigDecimal.valueOf(1000), BigDecimal.valueOf(8000),
+                2, 10, "dailyRateKes,asc");
 
-        assertEquals(HttpStatus.OK, result.getStatusCode());
-        assertEquals(1, result.getBody().size());
+        verify(equipmentService).search(criteria, expected);
+    }
+
+    @Test
+    void search_unknownSortField_throwsInvalidRequest() {
+        assertThrows(InvalidRequestException.class,
+                () -> equipmentController.search(null, null, null, null, 0, 20, "ownerId"));
+        verifyNoInteractions(equipmentService);
+    }
+
+    @Test
+    void search_sizeTooLarge_throwsInvalidRequest() {
+        assertThrows(InvalidRequestException.class,
+                () -> equipmentController.search(null, null, null, null, 0, 101, null));
     }
 
     @Test
