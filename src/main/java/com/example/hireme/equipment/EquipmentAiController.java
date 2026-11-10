@@ -1,7 +1,9 @@
 package com.example.hireme.equipment;
 
+import com.example.hireme.shared.web.PageRequests;
 import com.example.hireme.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EquipmentAiController {
 
     private final EquipmentDescriptionService descriptionService;
+    private final EquipmentAiSearchService aiSearchService;
     private final UserService userService;
 
     @PostMapping("/describe")
@@ -36,8 +40,32 @@ public class EquipmentAiController {
             @Valid @RequestBody DescribeEquipmentRequest request,
             @AuthenticationPrincipal User userDetails
     ) {
-        Long userId = userService.getUserIdByEmail(userDetails.getUsername())
+        return ResponseEntity.ok(descriptionService.describe(request, getUserId(userDetails)));
+    }
+
+    @PostMapping("/search")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(operationId = "searchEquipmentWithAi", summary = "Search listings with a sentence",
+            description = "e.g. \"a tractor in Nakuru next weekend under 8000 a day\". The AI turns it into the filters of "
+                    + "GET /api/v1/equipment (returned in `filters`, for the UI to show and edit) and the normal search runs "
+                    + "with them. If AI is unavailable or over the limit, the words are matched instead (`interpretedBy: KEYWORDS`).")
+    @ApiResponse(responseCode = "200", description = "The interpreted filters and the matching listings")
+    public ResponseEntity<AiSearchResponse> search(
+            @Valid @RequestBody AiSearchRequest request,
+            @Parameter(description = "Zero-based page number")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size, 1 to " + PageRequests.MAX_SIZE)
+            @RequestParam(defaultValue = "" + PageRequests.DEFAULT_SIZE) int size,
+            @Parameter(description = "As for GET /api/v1/equipment", example = "dailyRateKes,asc")
+            @RequestParam(required = false) String sort,
+            @AuthenticationPrincipal User userDetails
+    ) {
+        var pageable = PageRequests.of(page, size, sort, EquipmentController.SORTABLE_FIELDS, EquipmentController.DEFAULT_SORT, "id");
+        return ResponseEntity.ok(aiSearchService.search(request, pageable, getUserId(userDetails)));
+    }
+
+    private Long getUserId(User userDetails) {
+        return userService.getUserIdByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found in security context"));
-        return ResponseEntity.ok(descriptionService.describe(request, userId));
     }
 }
