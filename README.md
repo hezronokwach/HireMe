@@ -357,7 +357,8 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 
 - **Domain exceptions** extend `BaseException`, which carries its own HTTP status. Examples are `UserAlreadyExistsException` (409), `InvalidCredentialsException` (401), `EquipmentNotFoundException` (404) and the booking `NotFoundException` (404), `ConflictException` (409), `ForbiddenException` (403) and `ValidationException` (400).
 - **Bean Validation failures** return `400`, with one entry per field in `errors`.
-- **Authorisation failures** (`AccessDeniedException`, including those raised by `@PreAuthorize`) return `403`.
+- **Missing, invalid or expired tokens** on a protected endpoint return `401` with a `WWW-Authenticate: Bearer` header (`RestAuthenticationEntryPoint`).
+- **Authorisation failures** (a valid token without the required role, including `@PreAuthorize` checks) return `403`.
 - **Anything else** returns `500` with the message `An unexpected error occurred: ...`.
 
 ---
