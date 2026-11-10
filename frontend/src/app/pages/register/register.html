@@ -1,0 +1,79 @@
+<mat-card appearance="outlined">
+  <mat-card-content>
+    <h1>Create your account</h1>
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <fieldset class="roles">
+        <legend>How will you use HireMe?</legend>
+        <mat-radio-group formControlName="role" aria-label="Account type">
+          @for (role of roles; track role.value) {
+            <mat-radio-button [value]="role.value">{{ role.label }}</mat-radio-button>
+          }
+        </mat-radio-group>
+      </fieldset>
+
+      <mat-form-field>
+        <mat-label>Full name</mat-label>
+        <input matInput formControlName="fullName" autocomplete="name" />
+        @if (form.controls.fullName.hasError('required')) {
+          <mat-error>Enter your name</mat-error>
+        }
+        @if (serverErrors().fullName; as message) {
+          <mat-hint class="hint-error">{{ message }}</mat-hint>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" autocomplete="email" />
+        @if (form.controls.email.hasError('required')) {
+          <mat-error>Enter your email</mat-error>
+        } @else if (form.controls.email.hasError('email')) {
+          <mat-error>Enter a valid email</mat-error>
+        }
+        @if (serverErrors().email; as message) {
+          <mat-hint class="hint-error">{{ message }}</mat-hint>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Phone number</mat-label>
+        <input
+          matInput
+          type="tel"
+          formControlName="phoneNumber"
+          autocomplete="tel"
+          placeholder="0712 345 678"
+        />
+        @if (form.controls.phoneNumber.hasError('required')) {
+          <mat-error>Enter your phone number</mat-error>
+        } @else if (form.controls.phoneNumber.hasError('phone')) {
+          <mat-error>Use a Kenyan mobile number: 07XXXXXXXX or +2547XXXXXXXX</mat-error>
+        }
+        @if (serverErrors().phoneNumber; as message) {
+          <mat-hint class="hint-error">{{ message }}</mat-hint>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Password</mat-label>
+        <input matInput type="password" formControlName="password" autocomplete="new-password" />
+        <mat-hint>At least 8 characters</mat-hint>
+        @if (form.controls.password.hasError('required')) {
+          <mat-error>Choose a password</mat-error>
+        } @else if (form.controls.password.hasError('minlength')) {
+          <mat-error>Use at least 8 characters</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="actions">
+        <button mat-flat-button type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Creating account…' : 'Create account' }}
+        </button>
+      </div>
+    </form>
+    <p class="switch">Already have an account? <a routerLink="/login">Log in</a></p>
+  </mat-card-content>
+</mat-card>

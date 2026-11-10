@@ -1,0 +1,17 @@
+.roles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+
+  legend {
+    font: var(--mat-sys-title-small);
+    margin-bottom: 4px;
+  }
+}
+
+.hint-error {
+  color: var(--mat-sys-error);
+}

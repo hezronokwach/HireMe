@@ -1,0 +1,37 @@
+<mat-card appearance="outlined">
+  <mat-card-content>
+    <h1>Log in</h1>
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <mat-form-field>
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" autocomplete="email" />
+        @if (form.controls.email.hasError('required')) {
+          <mat-error>Enter your email</mat-error>
+        } @else if (form.controls.email.hasError('email')) {
+          <mat-error>Enter a valid email</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+        />
+        @if (form.controls.password.hasError('required')) {
+          <mat-error>Enter your password</mat-error>
+        }
+      </mat-form-field>
+      <div class="actions">
+        <button mat-flat-button type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Logging in…' : 'Log in' }}
+        </button>
+      </div>
+    </form>
+    <p class="switch">New to HireMe? <a routerLink="/register">Create an account</a></p>
+  </mat-card-content>
+</mat-card>
