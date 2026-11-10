@@ -49,6 +49,16 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getMyBookings(clientId));
     }
 
+    @GetMapping("/for-my-equipment")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    public ResponseEntity<List<BookingResponse>> getBookingsForMyEquipment(
+            @RequestParam(required = false) BookingStatus status,
+            @AuthenticationPrincipal User userDetails
+    ) {
+        Long ownerId = getUserId(userDetails);
+        return ResponseEntity.ok(bookingService.getBookingsForMyEquipment(ownerId, status));
+    }
+
     @PutMapping("/{id}/confirm")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public ResponseEntity<BookingResponse> confirm(
