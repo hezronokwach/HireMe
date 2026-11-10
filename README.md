@@ -178,7 +178,7 @@ Two confirmations can't double-book the same dates: confirming a booking locks t
   ```
 - `JwtAuthenticationFilter` validates the token, loads the user through `CustomUserDetailsService` and fills in the security context. Roles become authorities with a `ROLE_` prefix (`ROLE_CLIENT`, `ROLE_OWNER`, `ROLE_ADMIN`).
 - **Authorisation** uses `@PreAuthorize` on each endpoint (method security is enabled). Ownership checks, such as "is this your equipment?", happen in the service layer.
-- **Public routes:** `/api/v1/auth/**` and `/actuator/**`. Every other route needs a valid token.
+- **Public routes:** `/api/v1/auth/**`, `/actuator/**` and the API docs (`/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`). Every other route needs a valid token.
 - **CORS** allows only `app.frontend-url` (default `http://localhost:5173`), with credentials, for `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 - **CSRF** uses a cookie-based token repository (`XSRF-TOKEN` cookie, `X-XSRF-TOKEN` header) for non-API routes. It is turned off for `/api/v1/**` and `/actuator/**` because those requests use bearer tokens, not cookies.
 - Passwords are hashed with BCrypt.
@@ -188,6 +188,24 @@ Two confirmations can't double-book the same dates: confirming a booking locks t
 ## API Reference
 
 Base path: `/api/v1`. Request and response bodies are JSON.
+
+### Interactive docs (OpenAPI / Swagger UI)
+
+With the app running, open **http://localhost:8080/swagger-ui.html** to browse and call every endpoint. The machine-readable OpenAPI 3.1 spec is at **http://localhost:8080/v3/api-docs** (served by [springdoc-openapi](https://springdoc.org)).
+
+1. Call `POST /api/v1/auth/login` (or register first) and copy the `token` from the response.
+2. Click **Authorize**, paste the token (without the `Bearer ` prefix) and click **Authorize**.
+3. Every other request you send from the page now carries `Authorization: Bearer <token>`.
+
+The spec documents each operation's success code, its error responses (all with the `ErrorResponse` body described in [Error Handling](#error-handling)) and readable operation IDs such as `searchEquipment` and `confirmBooking`. A client generator can turn it into a typed client, for example for the Angular frontend:
+
+```bash
+npx @openapitools/openapi-generator-cli generate -i http://localhost:8080/v3/api-docs -g typescript-angular -o src/app/api
+```
+
+To turn the docs off, for example in production, set `springdoc.api-docs.enabled=false` and `springdoc.swagger-ui.enabled=false`.
+
+The sections below describe the same endpoints in prose.
 
 ### Auth: `/api/v1/auth` (public)
 
@@ -511,6 +529,7 @@ java -jar target/HireMe-0.0.1-SNAPSHOT.jar
 | `app.frontend-url`       | n/a                  | `http://localhost:5173`  | The only origin CORS allows                   |
 | `app.time-zone`          | n/a                  | `Africa/Nairobi`         | Business time zone: what "today" means for bookings |
 | `app.bookings.activation-cron` | n/a            | `0 5 * * * *` (hourly)   | When confirmed bookings are checked for activation |
+| `springdoc.api-docs.enabled` / `springdoc.swagger-ui.enabled` | n/a | `true` | Serve the OpenAPI spec and Swagger UI; set to `false` to turn them off |
 
 Config files:
 
@@ -537,6 +556,7 @@ The test suite covers:
 - **`BookingRepositoryTest`**, which runs the booking queries on H2, including the date-overlap edge cases (same day, back-to-back, containing).
 - **`SecurityErrorResponsesTest`**, which calls the running app over HTTP to check the `401`/`403` responses.
 - **`BookingConcurrentUpdateTest`**, which plays two overlapping changes to one booking step by step (a second transaction commits while the first still holds a stale copy) and checks that the stale one fails instead of overwriting.
+- **`OpenApiDocsTest`**, which fetches `/v3/api-docs` without a token and checks that every endpoint is there with the JWT scheme, real success codes (`201`, `204`), `ErrorResponse` error bodies and unique operation IDs. It also saves the spec to `target/openapi.json`.
 
 Tests use H2 in memory with the settings in `src/test/resources/application.properties`.
 
