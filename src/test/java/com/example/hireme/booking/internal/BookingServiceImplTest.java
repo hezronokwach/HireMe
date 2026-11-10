@@ -207,6 +207,68 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void getAvailability_noBookings_isAvailable() {
+        LocalDate from = LocalDate.of(2030, 1, 1);
+        LocalDate to = LocalDate.of(2030, 1, 31);
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+        when(bookingRepository.findOverlapping(1L, from, to, BookingServiceImpl.BLOCKING_STATUSES)).thenReturn(List.of());
+
+        EquipmentAvailabilityResponse result = bookingService.getAvailability(1L, from, to);
+
+        assertTrue(result.available());
+        assertTrue(result.bookedPeriods().isEmpty());
+        assertEquals(from, result.from());
+        assertEquals(to, result.to());
+    }
+
+    @Test
+    void getAvailability_withConfirmedBooking_listsBookedPeriod() {
+        LocalDate from = LocalDate.of(2030, 1, 1);
+        LocalDate to = LocalDate.of(2030, 1, 31);
+        BookingEntity confirmed = createEntity(BookingStatus.CONFIRMED);
+        confirmed.setStartDate(LocalDate.of(2030, 1, 10));
+        confirmed.setEndDate(LocalDate.of(2030, 1, 12));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+        when(bookingRepository.findOverlapping(1L, from, to, BookingServiceImpl.BLOCKING_STATUSES)).thenReturn(List.of(confirmed));
+
+        EquipmentAvailabilityResponse result = bookingService.getAvailability(1L, from, to);
+
+        assertFalse(result.available());
+        assertEquals(List.of(new EquipmentAvailabilityResponse.BookedPeriod(LocalDate.of(2030, 1, 10), LocalDate.of(2030, 1, 12))),
+                result.bookedPeriods());
+    }
+
+    @Test
+    void getAvailability_underMaintenance_isNotAvailable() {
+        LocalDate from = LocalDate.of(2030, 1, 1);
+        EquipmentResponse maintenance = new EquipmentResponse(1L, 2L, "Excavator", com.example.hireme.equipment.Category.HEAVY_MACHINERY,
+                "Big machine", BigDecimal.valueOf(1000), "Nairobi", EquipmentStatus.UNDER_MAINTENANCE, Instant.now(), null);
+        when(equipmentService.getById(1L)).thenReturn(maintenance);
+        when(bookingRepository.findOverlapping(1L, from, from, BookingServiceImpl.BLOCKING_STATUSES)).thenReturn(List.of());
+
+        assertFalse(bookingService.getAvailability(1L, from, from).available());
+    }
+
+    @Test
+    void getAvailability_toBeforeFrom_throwsValidation() {
+        assertThrows(ValidationException.class,
+                () -> bookingService.getAvailability(1L, LocalDate.of(2030, 1, 5), LocalDate.of(2030, 1, 4)));
+        verifyNoInteractions(equipmentService, bookingRepository);
+    }
+
+    @Test
+    void getAvailability_rangeTooLong_throwsValidation() {
+        LocalDate from = LocalDate.of(2030, 1, 1);
+
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+
+        // 366 days including both ends is allowed; one more day is not
+        assertDoesNotThrow(() -> bookingService.getAvailability(1L, from, from.plusDays(BookingServiceImpl.MAX_AVAILABILITY_RANGE_DAYS - 1L)));
+        assertThrows(ValidationException.class,
+                () -> bookingService.getAvailability(1L, from, from.plusDays(BookingServiceImpl.MAX_AVAILABILITY_RANGE_DAYS)));
+    }
+
+    @Test
     void confirm_pendingBooking_returnsConfirmed() {
         BookingEntity entity = createEntity(BookingStatus.PENDING);
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));

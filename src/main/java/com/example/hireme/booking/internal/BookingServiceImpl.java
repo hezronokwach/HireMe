@@ -10,6 +10,7 @@ import com.example.hireme.shared.event.BookingCompletedEvent;
 import com.example.hireme.shared.event.BookingCreatedEvent;
 import com.example.hireme.equipment.EquipmentResponse;
 import com.example.hireme.equipment.EquipmentService;
+import com.example.hireme.equipment.EquipmentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
@@ -29,6 +31,7 @@ import java.util.Set;
 public class BookingServiceImpl implements BookingService {
     // Bookings that hold their dates. PENDING ones don't: several clients can ask for the same dates.
     static final Set<BookingStatus> BLOCKING_STATUSES = EnumSet.of(BookingStatus.CONFIRMED, BookingStatus.ACTIVE);
+    static final int MAX_AVAILABILITY_RANGE_DAYS = 366;
 
     private final EquipmentService equipmentService;
     private final BookingRepository bookingRepository;
@@ -91,6 +94,24 @@ public class BookingServiceImpl implements BookingService {
         return bookings.stream()
                 .map(bookingMapper::toBookingResponse)
                 .toList();
+    }
+
+    @Override
+    public EquipmentAvailabilityResponse getAvailability(Long equipmentId, LocalDate from, LocalDate to) {
+        if (to.isBefore(from)) {
+            throw new ValidationException("'to' cannot be before 'from'");
+        }
+        if (ChronoUnit.DAYS.between(from, to) >= MAX_AVAILABILITY_RANGE_DAYS) {
+            throw new ValidationException("Date range cannot be longer than " + MAX_AVAILABILITY_RANGE_DAYS + " days");
+        }
+        EquipmentResponse equipment = equipmentService.getById(equipmentId);
+        List<EquipmentAvailabilityResponse.BookedPeriod> bookedPeriods = bookingRepository
+                .findOverlapping(equipmentId, from, to, BLOCKING_STATUSES)
+                .stream()
+                .map(booking -> new EquipmentAvailabilityResponse.BookedPeriod(booking.getStartDate(), booking.getEndDate()))
+                .toList();
+        boolean available = equipment.equipmentStatus() == EquipmentStatus.AVAILABLE && bookedPeriods.isEmpty();
+        return new EquipmentAvailabilityResponse(equipmentId, from, to, available, bookedPeriods);
     }
 
     @Override
