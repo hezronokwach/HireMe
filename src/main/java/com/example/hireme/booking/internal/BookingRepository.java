@@ -2,6 +2,7 @@ package com.example.hireme.booking.internal;
 
 import com.example.hireme.booking.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,4 +29,13 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
                                         @Param("startDate") LocalDate startDate,
                                         @Param("endDate") LocalDate endDate,
                                         @Param("statuses") Collection<BookingStatus> statuses);
+
+    List<BookingEntity> findByStatusAndStartDateLessThanEqual(BookingStatus status, LocalDate date);
+
+    // Changes the status only if it is still `from`; returns 1 when it did, 0 when the booking had moved on.
+    @Modifying
+    @Query("update BookingEntity b set b.status = :to where b.bookingId = :bookingId and b.status = :from")
+    int updateStatus(@Param("bookingId") Long bookingId,
+                     @Param("from") BookingStatus from,
+                     @Param("to") BookingStatus to);
 }

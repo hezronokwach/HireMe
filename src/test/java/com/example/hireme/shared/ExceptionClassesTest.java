@@ -70,4 +70,11 @@ class ExceptionClassesTest {
         assertEquals("User with email john@test.com already exists", ex.getMessage());
         assertEquals(HttpStatus.CONFLICT, ex.getStatus());
     }
+
+    @Test
+    void bookingForbiddenException_withMessage_setsMessageAndStatus() {
+        ForbiddenException ex = new ForbiddenException("Only the owner can do this");
+        assertEquals("Only the owner can do this", ex.getMessage());
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+    }
 }

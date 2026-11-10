@@ -167,6 +167,10 @@ public class BookingServiceImpl implements BookingService {
         if (bookingEntity.getStatus() == BookingStatus.CANCELLED) {
             throw new ConflictException("Booking is already cancelled");
         }
+        // Once the hire has started the client has the equipment, so only the owner can end it early.
+        if (bookingEntity.getStatus() == BookingStatus.ACTIVE && !isOwner) {
+            throw new ForbiddenException("Only the equipment owner can cancel an active booking");
+        }
         bookingEntity.setStatus(BookingStatus.CANCELLED);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
 

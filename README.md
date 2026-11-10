@@ -138,28 +138,29 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
 ## Booking Lifecycle
 
 ```
-             create (client)
-                  │
-                  ▼
-             ┌─────────┐   confirm (owner)   ┌───────────┐   complete (owner)   ┌───────────┐
-             │ PENDING │ ──────────────────▶ │ CONFIRMED │ ───────────────────▶ │ COMPLETED │
-             └─────────┘                     └───────────┘                      └───────────┘
-                  │                                │
-                  │ cancel (client or owner)       │ cancel (client or owner)
-                  ▼                                ▼
-             ┌───────────┐ ◀───────────────────────┘
-             │ CANCELLED │
-             └───────────┘
+        create (client)
+             │
+             ▼
+        ┌─────────┐ confirm (owner) ┌───────────┐ start date (job) ┌────────┐ complete (owner) ┌───────────┐
+        │ PENDING │ ──────────────▶ │ CONFIRMED │ ───────────────▶ │ ACTIVE │ ───────────────▶ │ COMPLETED │
+        └─────────┘                 └───────────┘                  └────────┘                  └───────────┘
+             │                            │                            │
+             │ cancel (client or owner)   │ cancel (client or owner)   │ cancel (owner only)
+             ▼                            ▼                            ▼
+        ┌───────────┐ ◀────────────────────┴────────────────────────────┘
+        │ CANCELLED │
+        └───────────┘
 ```
 
 | Action   | Who                                   | Allowed from                | Checks and side effects             |
 |----------|---------------------------------------|-----------------------------|-------------------------------------|
 | Create   | Any `CLIENT`/`ADMIN`                  | n/a                         | Equipment must be `AVAILABLE` and no `CONFIRMED`/`ACTIVE` booking may overlap the dates (`409`). Other `PENDING` requests for the same dates are fine. |
 | Confirm  | Owner of the equipment                | `PENDING`                   | Re-checks the dates (`409` if taken), then cancels every other `PENDING` booking that overlaps them. |
+| Activate | `BookingActivationJob` (no user)      | `CONFIRMED`, once `startDate` is today or earlier | Publishes `BookingActivatedEvent` |
 | Complete | Owner of the equipment                | `CONFIRMED` or `ACTIVE`     | none                                |
-| Cancel   | The booking's client or the equipment owner | anything except `COMPLETED`/`CANCELLED` | Frees the dates             |
+| Cancel   | The booking's client or the equipment owner; only the owner once it is `ACTIVE` | anything except `COMPLETED`/`CANCELLED` | Frees the dates (`403` for a client on an `ACTIVE` booking) |
 
-`ACTIVE` is defined in `BookingStatus` but nothing in the code sets it yet.
+**Activation:** `BookingActivationJob` runs every hour at minute 5 (`app.bookings.activation-cron`) and once on startup, so bookings due while the app was down catch up straight away. "Today" is the date in `app.time-zone` (Africa/Nairobi), whatever the server's own time zone is. It is safe to run again: each booking is switched with `UPDATE ... WHERE status = 'CONFIRMED'`, so a booking cancelled in the meantime stays cancelled.
 
 ### Availability
 
@@ -478,6 +479,8 @@ java -jar target/HireMe-0.0.1-SNAPSHOT.jar
 | `app.jwt.secret`         | `JWT_SECRET`         | n/a                      | HMAC signing key (at least 32 bytes)          |
 | `app.jwt.expiration-ms`  | n/a                  | `86400000` (24 h)        | Token lifetime                                |
 | `app.frontend-url`       | n/a                  | `http://localhost:5173`  | The only origin CORS allows                   |
+| `app.time-zone`          | n/a                  | `Africa/Nairobi`         | Business time zone: what "today" means for bookings |
+| `app.bookings.activation-cron` | n/a            | `0 5 * * * *` (hourly)   | When confirmed bookings are checked for activation |
 
 Config files:
 
@@ -576,7 +579,7 @@ HireMe/
 
 These are behaviours of the current code that you should know about when you work on or consume the API:
 
-- **`ACTIVE` booking status** exists but is never set.
+- **Simultaneous changes to one booking:** if a client cancels a booking at the same moment the owner confirms or completes it, the later save wins. Bookings have no `@Version` column for optimistic locking yet. (Activation is not affected: it only switches bookings that are still `CONFIRMED`.)
 
 ---
 
