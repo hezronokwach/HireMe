@@ -5,6 +5,10 @@ import org.springframework.http.HttpStatus;
 
 public class ForbiddenException extends BaseException {
     public ForbiddenException() {
-        super("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
+        this("You are not authorized to perform this action");
+    }
+
+    public ForbiddenException(String message) {
+        super(message, HttpStatus.FORBIDDEN);
     }
 }

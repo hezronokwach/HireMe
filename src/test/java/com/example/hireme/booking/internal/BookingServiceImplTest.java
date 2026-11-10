@@ -392,6 +392,31 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void cancel_activeBookingByClient_throwsForbidden() {
+        BookingEntity entity = createEntity(BookingStatus.ACTIVE); // client 1
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+
+        ForbiddenException ex = assertThrows(ForbiddenException.class, () -> bookingService.cancel(1L, 1L));
+        assertEquals("Only the equipment owner can cancel an active booking", ex.getMessage());
+        assertEquals(BookingStatus.ACTIVE, entity.getStatus());
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void cancel_activeBookingByOwner_returnsCancelled() {
+        BookingEntity entity = createEntity(BookingStatus.ACTIVE);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+        when(bookingRepository.save(entity)).thenReturn(entity);
+
+        bookingService.cancel(1L, 2L);
+
+        assertEquals(BookingStatus.CANCELLED, entity.getStatus());
+        verify(eventPublisher).publishEvent(any(BookingCancelledEvent.class));
+    }
+
+    @Test
     void cancel_notFound_throwsNotFoundException() {
         when(bookingRepository.findById(1L)).thenReturn(Optional.empty());
 
