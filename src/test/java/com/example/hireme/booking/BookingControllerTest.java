@@ -1,11 +1,15 @@
 package com.example.hireme.booking;
 
+import com.example.hireme.shared.web.PageResponse;
 import com.example.hireme.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.User;
@@ -61,25 +65,40 @@ class BookingControllerTest {
     }
 
     @Test
-    void getMyBookings_returnsList() {
+    void getMyBookings_defaults_newestFirst() {
         when(userService.getUserIdByEmail("john@test.com")).thenReturn(Optional.of(1L));
-        when(bookingService.getMyBookings(1L)).thenReturn(List.of(bookingResponse()));
+        Pageable expected = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "creationDate").and(Sort.by("bookingId")));
+        when(bookingService.getMyBookings(1L, expected)).thenReturn(new PageResponse<>(List.of(bookingResponse()), 0, 20, 1, 1));
 
-        ResponseEntity<List<BookingResponse>> result = bookingController.getMyBookings(userDetails());
+        ResponseEntity<PageResponse<BookingResponse>> result = bookingController.getMyBookings(0, 20, null, userDetails());
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
-        assertEquals(1, result.getBody().size());
+        assertEquals(1, result.getBody().content().size());
+    }
+
+    @Test
+    void getMyBookings_sortByStartDate() {
+        when(userService.getUserIdByEmail("john@test.com")).thenReturn(Optional.of(1L));
+        Pageable expected = PageRequest.of(1, 5, Sort.by(Sort.Direction.ASC, "startDate").and(Sort.by("bookingId")));
+        when(bookingService.getMyBookings(1L, expected)).thenReturn(new PageResponse<>(List.of(), 1, 5, 0, 0));
+
+        bookingController.getMyBookings(1, 5, "startDate", userDetails());
+
+        verify(bookingService).getMyBookings(1L, expected);
     }
 
     @Test
     void getBookingsForMyEquipment_passesOwnerAndStatus() {
         when(userService.getUserIdByEmail("john@test.com")).thenReturn(Optional.of(1L));
-        when(bookingService.getBookingsForMyEquipment(1L, BookingStatus.PENDING)).thenReturn(List.of(bookingResponse()));
+        Pageable expected = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "creationDate").and(Sort.by("bookingId")));
+        when(bookingService.getBookingsForMyEquipment(1L, BookingStatus.PENDING, expected))
+                .thenReturn(new PageResponse<>(List.of(bookingResponse()), 0, 20, 1, 1));
 
-        ResponseEntity<List<BookingResponse>> result = bookingController.getBookingsForMyEquipment(BookingStatus.PENDING, userDetails());
+        ResponseEntity<PageResponse<BookingResponse>> result =
+                bookingController.getBookingsForMyEquipment(BookingStatus.PENDING, 0, 20, null, userDetails());
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
-        assertEquals(1, result.getBody().size());
+        assertEquals(1, result.getBody().content().size());
     }
 
     @Test

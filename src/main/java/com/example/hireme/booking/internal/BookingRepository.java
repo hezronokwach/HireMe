@@ -1,6 +1,8 @@
 package com.example.hireme.booking.internal;
 
 import com.example.hireme.booking.BookingStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,9 +13,9 @@ import java.util.Collection;
 import java.util.List;
 
 public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
-    List<BookingEntity> findByClientId(Long clientId);
-    List<BookingEntity> findByEquipmentIdIn(Collection<Long> equipmentIds);
-    List<BookingEntity> findByEquipmentIdInAndStatus(Collection<Long> equipmentIds, BookingStatus status);
+    Page<BookingEntity> findByClientId(Long clientId, Pageable pageable);
+    Page<BookingEntity> findByEquipmentIdIn(Collection<Long> equipmentIds, Pageable pageable);
+    Page<BookingEntity> findByEquipmentIdInAndStatus(Collection<Long> equipmentIds, BookingStatus status, Pageable pageable);
     boolean existsByEquipmentIdAndStatusInAndEndDateGreaterThanEqual(Long equipmentId, Collection<BookingStatus> statuses, LocalDate date);
 
     // Both start and end days are part of a booking, so [1st, 3rd] and [3rd, 5th] overlap but [1st, 3rd] and [4th, 5th] don't.

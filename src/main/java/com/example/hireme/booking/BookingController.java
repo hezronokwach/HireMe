@@ -1,8 +1,11 @@
 package com.example.hireme.booking;
 
+import com.example.hireme.shared.web.PageRequests;
+import com.example.hireme.shared.web.PageResponse;
 import com.example.hireme.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,12 +13,15 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/bookings")
 @RequiredArgsConstructor
 public class BookingController {
+
+    static final Set<String> SORTABLE_FIELDS = Set.of("startDate", "creationDate");
+    static final String DEFAULT_SORT = "creationDate,desc"; // newest requests first
 
     private final BookingService bookingService;
     private final UserService userService;
@@ -42,21 +48,31 @@ public class BookingController {
 
     @GetMapping("/my-bookings")
     @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN')")
-    public ResponseEntity<List<BookingResponse>> getMyBookings(
+    public ResponseEntity<PageResponse<BookingResponse>> getMyBookings(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PageRequests.DEFAULT_SIZE) int size,
+            @RequestParam(required = false) String sort,
             @AuthenticationPrincipal User userDetails
     ) {
         Long clientId = getUserId(userDetails);
-        return ResponseEntity.ok(bookingService.getMyBookings(clientId));
+        return ResponseEntity.ok(bookingService.getMyBookings(clientId, pageRequest(page, size, sort)));
     }
 
     @GetMapping("/for-my-equipment")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
-    public ResponseEntity<List<BookingResponse>> getBookingsForMyEquipment(
+    public ResponseEntity<PageResponse<BookingResponse>> getBookingsForMyEquipment(
             @RequestParam(required = false) BookingStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PageRequests.DEFAULT_SIZE) int size,
+            @RequestParam(required = false) String sort,
             @AuthenticationPrincipal User userDetails
     ) {
         Long ownerId = getUserId(userDetails);
-        return ResponseEntity.ok(bookingService.getBookingsForMyEquipment(ownerId, status));
+        return ResponseEntity.ok(bookingService.getBookingsForMyEquipment(ownerId, status, pageRequest(page, size, sort)));
+    }
+
+    private Pageable pageRequest(int page, int size, String sort) {
+        return PageRequests.of(page, size, sort, SORTABLE_FIELDS, DEFAULT_SORT, "bookingId");
     }
 
     @PutMapping("/{id}/confirm")

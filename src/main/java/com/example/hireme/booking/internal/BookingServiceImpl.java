@@ -11,8 +11,11 @@ import com.example.hireme.shared.event.BookingCreatedEvent;
 import com.example.hireme.equipment.EquipmentResponse;
 import com.example.hireme.equipment.EquipmentService;
 import com.example.hireme.equipment.EquipmentStatus;
+import com.example.hireme.shared.web.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,25 +78,20 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingResponse> getMyBookings(Long currentUserId) {
-        return bookingRepository.findByClientId(currentUserId)
-                .stream()
-                .map(bookingMapper::toBookingResponse)
-                .toList();
+    public PageResponse<BookingResponse> getMyBookings(Long currentUserId, Pageable pageable) {
+        return PageResponse.from(bookingRepository.findByClientId(currentUserId, pageable), bookingMapper::toBookingResponse);
     }
 
     @Override
-    public List<BookingResponse> getBookingsForMyEquipment(Long currentOwnerId, BookingStatus status) {
+    public PageResponse<BookingResponse> getBookingsForMyEquipment(Long currentOwnerId, BookingStatus status, Pageable pageable) {
         List<Long> equipmentIds = equipmentService.getIdsByOwner(currentOwnerId);
         if (equipmentIds.isEmpty()) {
-            return List.of();
+            return PageResponse.from(Page.<BookingEntity>empty(pageable), bookingMapper::toBookingResponse);
         }
-        List<BookingEntity> bookings = status == null
-                ? bookingRepository.findByEquipmentIdIn(equipmentIds)
-                : bookingRepository.findByEquipmentIdInAndStatus(equipmentIds, status);
-        return bookings.stream()
-                .map(bookingMapper::toBookingResponse)
-                .toList();
+        Page<BookingEntity> bookings = status == null
+                ? bookingRepository.findByEquipmentIdIn(equipmentIds, pageable)
+                : bookingRepository.findByEquipmentIdInAndStatus(equipmentIds, status, pageable);
+        return PageResponse.from(bookings, bookingMapper::toBookingResponse);
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.example.hireme.equipment.EquipmentStatus;
 import com.example.hireme.shared.event.BookingCancelledEvent;
 import com.example.hireme.shared.event.BookingCompletedEvent;
 import com.example.hireme.shared.event.BookingCreatedEvent;
+import com.example.hireme.shared.web.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -19,6 +20,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -45,6 +49,8 @@ class BookingServiceImplTest {
 
     @InjectMocks
     private BookingServiceImpl bookingService;
+
+    private static final Pageable PAGE = PageRequest.of(0, 20);
 
     private CreateBookingRequest createRequest() {
         return new CreateBookingRequest(1L, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3));
@@ -157,52 +163,53 @@ class BookingServiceImplTest {
     }
 
     @Test
-    void getMyBookings_returnsList() {
+    void getMyBookings_returnsPage() {
         BookingEntity entity = createEntity(BookingStatus.PENDING);
-        when(bookingRepository.findByClientId(1L)).thenReturn(List.of(entity));
+        when(bookingRepository.findByClientId(1L, PAGE)).thenReturn(new PageImpl<>(List.of(entity), PAGE, 1));
         BookingResponse response = new BookingResponse(1L, 1L, 1L, null, null, null, BookingStatus.PENDING, null);
         when(bookingMapper.toBookingResponse(entity)).thenReturn(response);
 
-        List<BookingResponse> result = bookingService.getMyBookings(1L);
+        PageResponse<BookingResponse> result = bookingService.getMyBookings(1L, PAGE);
 
-        assertEquals(1, result.size());
+        assertEquals(new PageResponse<>(List.of(response), 0, 20, 1, 1), result);
     }
 
     @Test
     void getBookingsForMyEquipment_noStatus_returnsAllBookingsOnOwnersEquipment() {
         BookingEntity entity = createEntity(BookingStatus.PENDING);
         when(equipmentService.getIdsByOwner(1L)).thenReturn(List.of(1L, 2L));
-        when(bookingRepository.findByEquipmentIdIn(List.of(1L, 2L))).thenReturn(List.of(entity));
+        when(bookingRepository.findByEquipmentIdIn(List.of(1L, 2L), PAGE)).thenReturn(new PageImpl<>(List.of(entity), PAGE, 1));
         BookingResponse response = new BookingResponse(1L, 1L, 2L, null, null, null, BookingStatus.PENDING, null);
         when(bookingMapper.toBookingResponse(entity)).thenReturn(response);
 
-        List<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, null);
+        PageResponse<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, null, PAGE);
 
-        assertEquals(List.of(response), result);
-        verify(bookingRepository, never()).findByEquipmentIdInAndStatus(any(), any());
+        assertEquals(List.of(response), result.content());
+        verify(bookingRepository, never()).findByEquipmentIdInAndStatus(any(), any(), any());
     }
 
     @Test
     void getBookingsForMyEquipment_withStatus_filtersByStatus() {
         BookingEntity entity = createEntity(BookingStatus.PENDING);
         when(equipmentService.getIdsByOwner(1L)).thenReturn(List.of(1L));
-        when(bookingRepository.findByEquipmentIdInAndStatus(List.of(1L), BookingStatus.PENDING)).thenReturn(List.of(entity));
+        when(bookingRepository.findByEquipmentIdInAndStatus(List.of(1L), BookingStatus.PENDING, PAGE))
+                .thenReturn(new PageImpl<>(List.of(entity), PAGE, 1));
         BookingResponse response = new BookingResponse(1L, 1L, 2L, null, null, null, BookingStatus.PENDING, null);
         when(bookingMapper.toBookingResponse(entity)).thenReturn(response);
 
-        List<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, BookingStatus.PENDING);
+        PageResponse<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, BookingStatus.PENDING, PAGE);
 
-        assertEquals(List.of(response), result);
-        verify(bookingRepository, never()).findByEquipmentIdIn(any());
+        assertEquals(List.of(response), result.content());
+        verify(bookingRepository, never()).findByEquipmentIdIn(any(), any());
     }
 
     @Test
     void getBookingsForMyEquipment_ownerHasNoEquipment_returnsEmptyWithoutQuery() {
         when(equipmentService.getIdsByOwner(1L)).thenReturn(List.of());
 
-        List<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, null);
+        PageResponse<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, null, PAGE);
 
-        assertTrue(result.isEmpty());
+        assertEquals(new PageResponse<BookingResponse>(List.of(), 0, 20, 0, 0), result);
         verifyNoInteractions(bookingRepository);
     }
 
