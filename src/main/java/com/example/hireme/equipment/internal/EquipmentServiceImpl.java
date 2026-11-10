@@ -1,16 +1,14 @@
 package com.example.hireme.equipment.internal;
 
 import com.example.hireme.equipment.*;
+import com.example.hireme.equipment.internal.exception.EquipmentInUseException;
 import com.example.hireme.equipment.internal.exception.EquipmentNotFoundException;
 import com.example.hireme.equipment.internal.exception.ForbiddenException;
-import com.example.hireme.shared.event.BookingCancelledEvent;
-import com.example.hireme.shared.event.BookingCompletedEvent;
-import com.example.hireme.shared.event.BookingCreatedEvent;
 import com.example.hireme.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -26,6 +24,7 @@ public class EquipmentServiceImpl implements EquipmentService {
     private final EquipmentMapper equipmentMapper;
     private final UserService userService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final EquipmentBookingChecker equipmentBookingChecker;
 
     @Override
     @Transactional
@@ -66,11 +65,17 @@ public class EquipmentServiceImpl implements EquipmentService {
         if (!canManage(equipmentEntity, currentUserId)) {
             throw new ForbiddenException();
         }
-        if(equipmentEntity.getStatus() == EquipmentStatus.HIRED) {
-            throw new ForbiddenException();
-        }
+        EquipmentStatus previousStatus = equipmentEntity.getStatus();
         equipmentMapper.applyUpdate(equipmentEntity, updateEquipmentRequest);
         EquipmentEntity equipmentEntitySaved = equipmentRepository.save(equipmentEntity);
+        if (equipmentEntitySaved.getStatus() != previousStatus) {
+            applicationEventPublisher.publishEvent(
+                    new EquipmentStatusChangedEvent(
+                            equipmentId,
+                            equipmentEntitySaved.getStatus(),
+                            Instant.now())
+            );
+        }
         return equipmentMapper.toCreateResponse(equipmentEntitySaved);
     }
 
@@ -82,8 +87,8 @@ public class EquipmentServiceImpl implements EquipmentService {
         if (!canManage(equipmentEntity, currentUserId)) {
             throw new ForbiddenException();
         }
-        if(equipmentEntity.getStatus() == EquipmentStatus.HIRED) {
-            throw new ForbiddenException();
+        if (equipmentBookingChecker.hasOpenBookings(equipmentId)) {
+            throw new EquipmentInUseException();
         }
         equipmentRepository.delete(equipmentEntity);
     }
@@ -105,47 +110,9 @@ public class EquipmentServiceImpl implements EquipmentService {
     }
 
     @Override
-    @Transactional
-    public void markAsHired(Long equipmentId) {
-        EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockForBooking(Long equipmentId) {
+        equipmentRepository.findByIdForUpdate(equipmentId)
                 .orElseThrow(EquipmentNotFoundException::new);
-        equipmentEntity.setStatus(EquipmentStatus.HIRED);
-        equipmentRepository.save(equipmentEntity);
-        applicationEventPublisher.publishEvent(
-                new EquipmentStatusChangedEvent(
-                        equipmentId,
-                        EquipmentStatus.HIRED,
-                        Instant.now())
-        );
-    }
-
-    @Override
-    @Transactional
-    public void markAsAvailable(Long equipmentId) {
-        EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
-                .orElseThrow(EquipmentNotFoundException::new);
-        equipmentEntity.setStatus(EquipmentStatus.AVAILABLE);
-        equipmentRepository.save(equipmentEntity);
-        applicationEventPublisher.publishEvent(
-                new EquipmentStatusChangedEvent(
-                        equipmentId,
-                        EquipmentStatus.AVAILABLE,
-                        Instant.now())
-        );
-    }
-
-    @ApplicationModuleListener
-    public void on(BookingCreatedEvent event) {
-        markAsHired(event.equipmentId());
-    }
-
-    @ApplicationModuleListener
-    public void on(BookingCancelledEvent event) {
-        markAsAvailable(event.equipmentId());
-    }
-
-    @ApplicationModuleListener
-    public void on(BookingCompletedEvent event) {
-        markAsAvailable(event.equipmentId());
     }
 }

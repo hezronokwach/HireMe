@@ -64,7 +64,7 @@ class EquipmentMapperTest {
         entity.setDailyRateKes(BigDecimal.valueOf(500));
         entity.setLocation("Old Location");
 
-        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, "New Desc", BigDecimal.valueOf(800), "New Location");
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, "New Desc", BigDecimal.valueOf(800), "New Location", null);
 
         equipmentMapper.applyUpdate(entity, request);
 
@@ -84,7 +84,7 @@ class EquipmentMapperTest {
         entity.setDailyRateKes(BigDecimal.valueOf(500));
         entity.setLocation("Old Location");
 
-        UpdateEquipmentRequest request = new UpdateEquipmentRequest(null, null, null, BigDecimal.valueOf(800), null);
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest(null, null, null, BigDecimal.valueOf(800), null, null);
 
         equipmentMapper.applyUpdate(entity, request);
 
@@ -100,8 +100,18 @@ class EquipmentMapperTest {
         EquipmentEntity entity = new EquipmentEntity();
         entity.setCategory(Category.HEAVY_MACHINERY);
 
-        equipmentMapper.applyUpdate(entity, new UpdateEquipmentRequest(null, Category.AGRICULTURAL, null, null, null));
+        equipmentMapper.applyUpdate(entity, new UpdateEquipmentRequest(null, Category.AGRICULTURAL, null, null, null, null));
 
         assertEquals(Category.AGRICULTURAL, entity.getCategory());
+    }
+
+    @Test
+    void applyUpdate_status_updatesStatus() {
+        EquipmentEntity entity = new EquipmentEntity();
+        entity.setStatus(EquipmentStatus.AVAILABLE);
+
+        equipmentMapper.applyUpdate(entity, new UpdateEquipmentRequest(null, null, null, null, null, EquipmentStatus.UNDER_MAINTENANCE));
+
+        assertEquals(EquipmentStatus.UNDER_MAINTENANCE, entity.getStatus());
     }
 }

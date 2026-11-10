@@ -18,13 +18,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
+    // Bookings that hold their dates. PENDING ones don't: several clients can ask for the same dates.
+    static final Set<BookingStatus> BLOCKING_STATUSES = EnumSet.of(BookingStatus.CONFIRMED, BookingStatus.ACTIVE);
+
     private final EquipmentService equipmentService;
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
@@ -33,11 +38,15 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest createBookingRequest, Long currentClientId) {
-        if (!equipmentService.isAvailable(createBookingRequest.equipmentId())) {
-            throw new ConflictException("Equipment is not available");
-        }
         if (createBookingRequest.endDate().isBefore(createBookingRequest.startDate())) {
             throw new ValidationException("Start date cannot be after end date");
+        }
+        if (!equipmentService.isAvailable(createBookingRequest.equipmentId())) {
+            throw new ConflictException("Equipment is not available for booking");
+        }
+        if (!bookingRepository.findOverlapping(createBookingRequest.equipmentId(), createBookingRequest.startDate(),
+                createBookingRequest.endDate(), BLOCKING_STATUSES).isEmpty()) {
+            throw new ConflictException("Equipment is already booked for some of these dates");
         }
         EquipmentResponse equipment = equipmentService.getById(createBookingRequest.equipmentId());
         long numberOfDays = ChronoUnit.DAYS.between(createBookingRequest.startDate(), createBookingRequest.endDate()) + 1;
@@ -96,9 +105,28 @@ public class BookingServiceImpl implements BookingService {
         if (bookingEntity.getStatus() != BookingStatus.PENDING) {
             throw new ConflictException("Only PENDING booking can be confirmed");
         }
+        // Confirmations for the same equipment wait for each other here, so two overlapping
+        // bookings can't both pass the check below.
+        equipmentService.lockForBooking(bookingEntity.getEquipmentId());
+        if (!bookingRepository.findOverlapping(bookingEntity.getEquipmentId(), bookingEntity.getStartDate(),
+                bookingEntity.getEndDate(), BLOCKING_STATUSES).isEmpty()) {
+            throw new ConflictException("Equipment is already booked for some of these dates");
+        }
         bookingEntity.setStatus(BookingStatus.CONFIRMED);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
+        cancelOverlappingPendingBookings(savedBooking);
         return bookingMapper.toBookingResponse(savedBooking);
+    }
+
+    // Once dates are confirmed, overlapping requests can never be confirmed, so close them now.
+    private void cancelOverlappingPendingBookings(BookingEntity confirmedBooking) {
+        bookingRepository.findOverlapping(confirmedBooking.getEquipmentId(), confirmedBooking.getStartDate(),
+                        confirmedBooking.getEndDate(), EnumSet.of(BookingStatus.PENDING))
+                .forEach(pending -> {
+                    pending.setStatus(BookingStatus.CANCELLED);
+                    bookingRepository.save(pending);
+                    eventPublisher.publishEvent(new BookingCancelledEvent(pending.getBookingId(), pending.getEquipmentId(), Instant.now()));
+                });
     }
 
     @Override

@@ -9,6 +9,7 @@ public record UpdateEquipmentRequest(
         String description,
         @Positive(message = "Daily rate must be positive")
         BigDecimal dailyRateKes,
-        String location
+        String location,
+        EquipmentStatus status
 ) {
 }

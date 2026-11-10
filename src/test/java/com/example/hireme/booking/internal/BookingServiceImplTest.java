@@ -13,6 +13,8 @@ import com.example.hireme.shared.event.BookingCompletedEvent;
 import com.example.hireme.shared.event.BookingCreatedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,6 +23,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -94,9 +97,21 @@ class BookingServiceImplTest {
     @Test
     void createBooking_endDateBeforeStartDate_throwsValidation() {
         CreateBookingRequest request = new CreateBookingRequest(1L, LocalDate.now().plusDays(5), LocalDate.now().plusDays(2));
-        when(equipmentService.isAvailable(1L)).thenReturn(true);
 
         assertThrows(ValidationException.class, () -> bookingService.createBooking(request, 1L));
+        verifyNoInteractions(equipmentService, bookingRepository);
+    }
+
+    @Test
+    void createBooking_datesAlreadyBooked_throwsConflict() {
+        CreateBookingRequest request = createRequest();
+        when(equipmentService.isAvailable(1L)).thenReturn(true);
+        when(bookingRepository.findOverlapping(1L, request.startDate(), request.endDate(), BookingServiceImpl.BLOCKING_STATUSES))
+                .thenReturn(List.of(createEntity(BookingStatus.CONFIRMED)));
+
+        ConflictException ex = assertThrows(ConflictException.class, () -> bookingService.createBooking(request, 1L));
+        assertEquals("Equipment is already booked for some of these dates", ex.getMessage());
+        verify(bookingRepository, never()).save(any());
     }
 
     @Test
@@ -203,6 +218,48 @@ class BookingServiceImplTest {
         BookingResponse result = bookingService.confirm(1L, 1L);
 
         assertEquals(BookingStatus.CONFIRMED, result.status());
+    }
+
+    @Test
+    void confirm_datesAlreadyConfirmed_throwsConflictAfterLocking() {
+        BookingEntity entity = createEntity(BookingStatus.PENDING);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(1L));
+        BookingEntity confirmed = createEntity(BookingStatus.CONFIRMED);
+        confirmed.setBookingId(2L);
+        when(bookingRepository.findOverlapping(1L, entity.getStartDate(), entity.getEndDate(), BookingServiceImpl.BLOCKING_STATUSES))
+                .thenReturn(List.of(confirmed));
+
+        assertThrows(ConflictException.class, () -> bookingService.confirm(1L, 1L));
+
+        InOrder inOrder = inOrder(equipmentService, bookingRepository);
+        inOrder.verify(equipmentService).lockForBooking(1L);
+        inOrder.verify(bookingRepository).findOverlapping(1L, entity.getStartDate(), entity.getEndDate(), BookingServiceImpl.BLOCKING_STATUSES);
+        assertEquals(BookingStatus.PENDING, entity.getStatus());
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void confirm_cancelsOverlappingPendingBookings() {
+        BookingEntity entity = createEntity(BookingStatus.PENDING);
+        BookingEntity otherRequest = createEntity(BookingStatus.PENDING);
+        otherRequest.setBookingId(2L);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(1L));
+        when(bookingRepository.save(any(BookingEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(bookingRepository.findOverlapping(1L, entity.getStartDate(), entity.getEndDate(), BookingServiceImpl.BLOCKING_STATUSES))
+                .thenReturn(List.of());
+        when(bookingRepository.findOverlapping(1L, entity.getStartDate(), entity.getEndDate(), EnumSet.of(BookingStatus.PENDING)))
+                .thenReturn(List.of(otherRequest));
+
+        bookingService.confirm(1L, 1L);
+
+        assertEquals(BookingStatus.CONFIRMED, entity.getStatus());
+        assertEquals(BookingStatus.CANCELLED, otherRequest.getStatus());
+        ArgumentCaptor<Object> event = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        BookingCancelledEvent cancelled = assertInstanceOf(BookingCancelledEvent.class, event.getValue());
+        assertEquals(2L, cancelled.bookingId());
     }
 
     @Test
