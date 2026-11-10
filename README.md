@@ -31,7 +31,7 @@ It is a Spring Boot **modular monolith**: one deployable application split into 
 | Language           | Java 25                                                 |
 | Framework          | Spring Boot 4.1 (Web, Data JPA, Validation, Security, Actuator) |
 | Modularity         | Spring Modulith 2.1 (core, JPA event publication registry) |
-| Database           | PostgreSQL 16 (H2 in tests), Flyway migrations          |
+| Database           | PostgreSQL 16 (H2 in unit tests, Testcontainers in integration tests), Flyway migrations |
 | Authentication     | JWT (jjwt 0.12) and BCrypt password hashing             |
 | Boilerplate        | Lombok                                                  |
 | Build              | Maven (wrapper included)                                |
@@ -542,8 +542,9 @@ Config files:
 ## Testing
 
 ```bash
-./mvnw test       # unit tests
-./mvnw verify     # tests + JaCoCo coverage report
+./mvnw test              # unit tests only (H2, no Docker needed)
+./mvnw verify            # unit tests + integration tests (needs Docker) + JaCoCo report
+./mvnw verify -DskipITs  # unit tests + JaCoCo, skip the integration tests
 ```
 
 The JaCoCo report is written to `target/site/jacoco/index.html`.
@@ -558,7 +559,22 @@ The test suite covers:
 - **`BookingConcurrentUpdateTest`**, which plays two overlapping changes to one booking step by step (a second transaction commits while the first still holds a stale copy) and checks that the stale one fails instead of overwriting.
 - **`OpenApiDocsTest`**, which fetches `/v3/api-docs` without a token and checks that every endpoint is there with the JWT scheme, real success codes (`201`, `204`), `ErrorResponse` error bodies and unique operation IDs. It also saves the spec to `target/openapi.json`.
 
-Tests use H2 in memory with the settings in `src/test/resources/application.properties`.
+Unit tests use H2 in memory with the settings in `src/test/resources/application.properties`.
+
+### Integration tests (PostgreSQL via Testcontainers)
+
+Classes ending in `IT` run in the `integration-test` phase (Maven Failsafe) against a real **PostgreSQL 16** started in Docker by [Testcontainers](https://testcontainers.com). `@ServiceConnection` points the app at it, and all `*IT` classes share one container per run. They start the whole app on a random port and call it over HTTP with real JWTs:
+
+- **`BookingFlowIT`**:
+  - **The main flow:** register, log in, list equipment, find it with filters, two overlapping requests, confirm (which cancels the clashing one), availability, booking the last and the following day, delete refused, then complete and `my-bookings`.
+  - **`ACTIVE` bookings:** only the owner can cancel them.
+- **`SecurityIT`**: `401` for a missing or bad token and a wrong password, `403` for the wrong role or someone else's listing, `409` for a duplicate email (a duplicate name is fine).
+- **`PostgresSpecificIT`**:
+  - **Migrations:** all of them ran, including the PostgreSQL-only `V2`.
+  - **Check constraints:** they reject unknown statuses.
+  - **Row lock:** a confirm **waits** while another connection holds the equipment row `FOR UPDATE`, and finishes once it is released.
+
+They need Docker (Docker Desktop locally; GitHub Actions' Ubuntu runners have it), so CI runs them as part of `./mvnw clean verify`.
 
 ---
 
@@ -572,7 +588,7 @@ Runs on pull requests to `staging` and `main`:
 
 1. **Secret scanning** with Gitleaks
 2. **Dependency CVE scan** with Trivy (filesystem scan, `CRITICAL`/`HIGH`; results uploaded as SARIF)
-3. **Build, tests, modularity check, JaCoCo and the SonarCloud quality gate** (`./mvnw clean verify sonar:sonar` with pull-request decoration)
+3. **Build, unit and integration tests (PostgreSQL in Docker), modularity check, JaCoCo and the SonarCloud quality gate** (`./mvnw clean verify sonar:sonar` with pull-request decoration)
 
 ### `cd-pipeline.yml`: CI/CD Pipeline
 
