@@ -20,7 +20,6 @@ It is a Spring Boot **modular monolith**: one deployable application split into 
 - [Testing](#testing)
 - [CI/CD](#cicd)
 - [Project Structure](#project-structure)
-- [Known Limitations](#known-limitations)
 - [License](#license)
 
 ---
@@ -160,7 +159,7 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
 | Complete | Owner of the equipment                | `CONFIRMED` or `ACTIVE`     | none                                |
 | Cancel   | The booking's client or the equipment owner; only the owner once it is `ACTIVE` | anything except `COMPLETED`/`CANCELLED` | Frees the dates (`403` for a client on an `ACTIVE` booking) |
 
-**Activation:** `BookingActivationJob` runs every hour at minute 5 (`app.bookings.activation-cron`) and once on startup, so bookings due while the app was down catch up straight away. "Today" is the date in `app.time-zone` (Africa/Nairobi), whatever the server's own time zone is. It is safe to run again: each booking is switched with `UPDATE ... WHERE status = 'CONFIRMED'`, so a booking cancelled in the meantime stays cancelled.
+**Activation:** `BookingActivationJob` runs every hour at minute 5 (`app.bookings.activation-cron`) and once on startup, so bookings due while the app was down catch up straight away. "Today" is the date in `app.time-zone` (Africa/Nairobi), whatever the server's own time zone is. It is safe to run again: each booking is switched with `UPDATE ... WHERE status = 'CONFIRMED'`, so a booking cancelled in the meantime stays cancelled, and the update also bumps the booking's `version`, so a request still holding the old copy gets `409`.
 
 ### Availability
 
@@ -378,6 +377,7 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 
 - **Domain exceptions** extend `BaseException`, which carries its own HTTP status. Examples are `UserAlreadyExistsException` (409), `InvalidCredentialsException` (401), `EquipmentNotFoundException` (404) and the booking `NotFoundException` (404), `ConflictException` (409), `ForbiddenException` (403) and `ValidationException` (400).
 - **Bean Validation failures** return `400`, with one entry per field in `errors`.
+- **Conflicting changes:** bookings carry a `version` (`@Version`, optimistic locking). If two requests change the same booking at once, for example a client cancelling while the owner confirms, the first one wins and the second gets `409` asking the caller to reload and try again, instead of silently overwriting it.
 - **Missing, invalid or expired tokens** on a protected endpoint return `401` with a `WWW-Authenticate: Bearer` header (`RestAuthenticationEntryPoint`).
 - **Authorisation failures** (a valid token without the required role, including `@PreAuthorize` checks) return `403`.
 - **Anything else** returns `500` with the message `An unexpected error occurred: ...`.
@@ -506,6 +506,7 @@ The test suite covers:
 - **`HireMeApplicationTests`**, which starts the full application on H2: Flyway runs the migrations and Hibernate validates every entity against the resulting schema, so a missing migration fails the build.
 - **`BookingRepositoryTest`**, which runs the booking queries on H2, including the date-overlap edge cases (same day, back-to-back, containing).
 - **`SecurityErrorResponsesTest`**, which calls the running app over HTTP to check the `401`/`403` responses.
+- **`BookingConcurrentUpdateTest`**, which plays two overlapping changes to one booking step by step (a second transaction commits while the first still holds a stale copy) and checks that the stale one fails instead of overwriting.
 
 Tests use H2 in memory with the settings in `src/test/resources/application.properties`.
 
@@ -572,14 +573,6 @@ HireMe/
 ├── qodana.yaml               Qodana configuration
 └── pom.xml
 ```
-
----
-
-## Known Limitations
-
-These are behaviours of the current code that you should know about when you work on or consume the API:
-
-- **Simultaneous changes to one booking:** if a client cancels a booking at the same moment the owner confirms or completes it, the later save wins. Bookings have no `@Version` column for optimistic locking yet. (Activation is not affected: it only switches bookings that are still `CONFIRMED`.)
 
 ---
 
