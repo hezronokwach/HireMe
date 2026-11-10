@@ -213,7 +213,7 @@ GROQ_API_KEY=<your Groq key>
 - `JwtAuthenticationFilter` validates the token, loads the user through `CustomUserDetailsService` and fills in the security context. Roles become authorities with a `ROLE_` prefix (`ROLE_CLIENT`, `ROLE_OWNER`, `ROLE_ADMIN`).
 - **Authorisation** uses `@PreAuthorize` on each endpoint (method security is enabled). Ownership checks, such as "is this your equipment?", happen in the service layer.
 - **Public routes:** `/api/v1/auth/**`, `/actuator/**` and the API docs (`/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`). Every other route needs a valid token.
-- **CORS** allows only `app.frontend-url` (default `http://localhost:5173`), with credentials, for `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
+- **CORS** allows only `app.frontend-url` (default `http://localhost:4200`, set with `FRONTEND_URL`), with credentials, for `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 - **CSRF** uses a cookie-based token repository (`XSRF-TOKEN` cookie, `X-XSRF-TOKEN` header) for non-API routes. It is turned off for `/api/v1/**` and `/actuator/**` because those requests use bearer tokens, not cookies.
 - Passwords are hashed with BCrypt.
 
@@ -536,7 +536,7 @@ app:
   jwt:
     secret: <at least 32 characters>
     expiration-ms: 86400000
-  frontend-url: http://localhost:5173
+  frontend-url: http://localhost:4200
 ```
 
 Then run:
@@ -567,7 +567,7 @@ java -jar target/HireMe-0.0.1-SNAPSHOT.jar
 | `spring.datasource.password` | `DB_PASSWORD`    | n/a                      | Database password                             |
 | `app.jwt.secret`         | `JWT_SECRET`         | n/a                      | HMAC signing key (at least 32 bytes)          |
 | `app.jwt.expiration-ms`  | n/a                  | `86400000` (24 h)        | Token lifetime                                |
-| `app.frontend-url`       | n/a                  | `http://localhost:5173`  | The only origin CORS allows                   |
+| `app.frontend-url`       | `FRONTEND_URL`       | `http://localhost:4200`  | The only origin CORS allows                   |
 | `app.time-zone`          | n/a                  | `Africa/Nairobi`         | Business time zone: what "today" means for bookings |
 | `app.bookings.activation-cron` | n/a            | `0 5 * * * *` (hourly)   | When confirmed bookings are checked for activation |
 | `springdoc.api-docs.enabled` / `springdoc.swagger-ui.enabled` | n/a | `true` | Serve the OpenAPI spec and Swagger UI; set to `false` to turn them off |
