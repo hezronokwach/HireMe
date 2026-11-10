@@ -12,7 +12,7 @@ class AiStatusControllerTest {
     @Test
     void status_returnsTheAssistantsStatus() {
         AiAssistant assistant = mock(AiAssistant.class);
-        AiStatusResponse status = new AiStatusResponse(true, "llama-3.3-70b-versatile", 10);
+        AiStatusResponse status = new AiStatusResponse(true, "openai/gpt-oss-120b", 10);
         when(assistant.status()).thenReturn(status);
 
         ResponseEntity<AiStatusResponse> response = new AiStatusController(assistant).status();

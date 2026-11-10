@@ -173,7 +173,7 @@ Two confirmations can't double-book the same dates: confirming a booking locks t
 
 ## AI Features
 
-The `ai` module is the one place that talks to a language model. It uses [Groq](https://groq.com) through its OpenAI-compatible API, with [Spring AI](https://spring.io/projects/spring-ai) (`spring-ai-openai`, no starter) and the `llama-3.3-70b-versatile` model. Feature modules call the `AiAssistant` interface with a system and a user prompt, and get back either text or a record parsed from JSON. They never see HTTP, keys or retries.
+The `ai` module is the one place that talks to a language model. It uses [Groq](https://groq.com) through its OpenAI-compatible API, with [Spring AI](https://spring.io/projects/spring-ai) (`spring-ai-openai`, no starter) and the `openai/gpt-oss-120b` model (set `HIREME_AI_MODEL` to use another one; Groq retires models from time to time, see [its model list](https://console.groq.com/docs/models)). Feature modules call the `AiAssistant` interface with a system and a user prompt, and get back either text or a record parsed from JSON. They never see HTTP, keys or retries.
 
 - **Off by default.** It's on only with `HIREME_AI_ENABLED=true`, which also needs `GROQ_API_KEY`. The app refuses to start if AI is enabled without a key. While it's off, the app works normally and AI calls return `503`.
 - **Failures don't spread.** If Groq is down, slow (`hireme.ai.timeout`, default 20 s), rate-limiting us, or returns an unusable answer, the call fails with `503` ("AI features are unavailable right now") after `hireme.ai.max-retries` retries. Features with a non-AI fallback can catch `AiUnavailableException`.
@@ -555,7 +555,7 @@ java -jar target/HireMe-0.0.1-SNAPSHOT.jar
 | `springdoc.api-docs.enabled` / `springdoc.swagger-ui.enabled` | n/a | `true` | Serve the OpenAPI spec and Swagger UI; set to `false` to turn them off |
 | `hireme.ai.enabled`      | `HIREME_AI_ENABLED`  | `false`                  | Turn the AI features on (needs `GROQ_API_KEY`) |
 | `hireme.ai.api-key`      | `GROQ_API_KEY`       | none                     | Groq API key; never commit it                  |
-| `hireme.ai.model`        | n/a                  | `llama-3.3-70b-versatile`| Groq model id                                  |
+| `hireme.ai.model`        | `HIREME_AI_MODEL`    | `openai/gpt-oss-120b`    | Groq model id                                  |
 | `hireme.ai.base-url`     | n/a                  | `https://api.groq.com/openai/v1` | OpenAI-compatible endpoint             |
 | `hireme.ai.timeout` / `hireme.ai.max-retries` | n/a | `20s` / `1`           | Give up on a slow or failing Groq call         |
 | `hireme.ai.requests-per-minute` | n/a           | `10`                     | AI calls per user per rolling minute, then `429` |

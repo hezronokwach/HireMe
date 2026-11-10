@@ -33,7 +33,7 @@ public record AiProperties(
             baseUrl = "https://api.groq.com/openai/v1";
         }
         if (model == null || model.isBlank()) {
-            model = "llama-3.3-70b-versatile";
+            model = "openai/gpt-oss-120b";
         }
         if (timeout == null) {
             timeout = Duration.ofSeconds(20);

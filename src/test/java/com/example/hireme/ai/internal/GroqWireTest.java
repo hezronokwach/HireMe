@@ -64,7 +64,7 @@ class GroqWireTest {
 
     private String completion(String content) {
         return json.writeValueAsString(json.createObjectNode()
-                .put("id", "chatcmpl-test").put("object", "chat.completion").put("created", 1).put("model", "llama-3.3-70b-versatile")
+                .put("id", "chatcmpl-test").put("object", "chat.completion").put("created", 1).put("model", "openai/gpt-oss-120b")
                 .set("choices", json.createArrayNode().add(json.createObjectNode()
                         .put("index", 0).put("finish_reason", "stop")
                         .set("message", json.createObjectNode().put("role", "assistant").put("content", content)))));
@@ -73,7 +73,7 @@ class GroqWireTest {
     private AiAssistant assistant(Duration timeout) {
         AiProperties properties = new AiProperties(true, "test-key",
                 "http://localhost:" + server.getAddress().getPort() + "/openai/v1",
-                "llama-3.3-70b-versatile", timeout, 0, 256, 10);
+                "openai/gpt-oss-120b", timeout, 0, 256, 10);
         return new AiConfig().aiAssistant(properties, Clock.systemUTC());
     }
 
@@ -85,7 +85,7 @@ class GroqWireTest {
         assertEquals("/openai/v1/chat/completions", path.get());
         assertEquals("Bearer test-key", authorization.get());
         JsonNode body = requestBody.get();
-        assertEquals("llama-3.3-70b-versatile", body.get("model").asString());
+        assertEquals("openai/gpt-oss-120b", body.get("model").asString());
         assertEquals("system", body.at("/messages/0/role").asString());
         assertEquals("You write listings.", body.at("/messages/0/content").asString());
         assertEquals("user", body.at("/messages/1/role").asString());
