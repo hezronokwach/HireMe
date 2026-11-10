@@ -11,7 +11,10 @@ public interface EquipmentService {
 
     List<Long> getIdsByOwner(Long ownerId);
 
+    // true when the listing can take bookings (status AVAILABLE); booked dates are checked by the booking module
     boolean isAvailable(Long equipmentId);
-    void markAsHired(Long equipmentId);
-    void markAsAvailable(Long equipmentId);
+
+    // Locks the equipment row until the caller's transaction ends, so changes to its bookings
+    // (e.g. confirmations) run one at a time. Must be called inside a transaction.
+    void lockForBooking(Long equipmentId);
 }

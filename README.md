@@ -46,8 +46,8 @@ It is a Spring Boot **modular monolith**: one deployable application split into 
 ```
 com.example.hireme
 ├── user/        Registration, login, user lookup         (public API: UserService, AuthService, DTOs, Role)
-├── equipment/   Equipment listings and availability      (public API: EquipmentService, DTOs, enums)
-├── booking/     Bookings and their lifecycle             (public API: BookingService, DTOs, BookingStatus)
+├── equipment/   Equipment listings                       (public API: EquipmentService, EquipmentBookingChecker, DTOs, enums)
+├── booking/     Bookings, their lifecycle, booked dates  (public API: BookingService, DTOs, BookingStatus)
 └── shared/      OPEN module: security, exceptions, integration events
 ```
 
@@ -57,17 +57,15 @@ Each module exposes a small public API in its root package (service interfaces, 
 
 ```
 booking ──calls──▶ equipment ──calls──▶ user
-   │                   ▲
-   └── publishes ──────┘ (events via shared.event)
+   │                   │
+   └── implements ◀────┘ EquipmentBookingChecker (interface owned by equipment)
 ```
 
-- **booking → equipment (synchronous):** to check availability, read the daily rate and find the equipment's owner.
+- **booking → equipment (synchronous):** to check that a listing takes bookings, read the daily rate, find the equipment's owner and lock the equipment while a booking is confirmed (`EquipmentService.lockForBooking`).
 - **equipment → user (synchronous):** to check whether the caller has the `OWNER`/`ADMIN` role.
-- **booking → equipment (asynchronous):** `BookingCreatedEvent`, `BookingCancelledEvent` and `BookingCompletedEvent` are published by `booking` and handled in `equipment` with `@ApplicationModuleListener`.
+- **equipment asks booking through an interface:** before deleting a listing, `equipment` calls `EquipmentBookingChecker.hasOpenBookings`. The interface lives in `equipment` and `booking` implements it, so the type dependency still only points from `booking` to `equipment` (calling `booking` directly would be a cycle, which Modulith rejects).
 
-The booking events live in `shared.event`, not in `booking`. If they lived in `booking`, `equipment` would depend on `booking` while `booking` already depends on `equipment`, which is a cycle Modulith rejects. `shared` is declared an **open** module (`package-info.java`), so every module can use its contents.
-
-Because `spring-modulith-starter-jpa` is on the classpath, published events are recorded in an event publication table. The listeners run asynchronously after the publishing transaction commits.
+`booking` also publishes `BookingCreatedEvent`, `BookingCancelledEvent` and `BookingCompletedEvent` (in `shared.event`, an **open** module every module can use), and `equipment` publishes `EquipmentStatusChangedEvent` when an owner changes a listing's status. Nothing listens to them yet; they are there for features such as notifications. Because `spring-modulith-starter-jpa` is on the classpath, published events are recorded in an event publication table, and listeners run asynchronously after the publishing transaction commits.
 
 ### Database schemas
 
@@ -119,7 +117,7 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
 | `description`  | Optional                                           |
 | `dailyRateKes` | Required, must be greater than zero                |
 | `location`     | Required                                           |
-| `status`       | `AVAILABLE` (default), `HIRED`, `UNDER_MAINTENANCE`|
+| `status`       | `AVAILABLE` (default) or `UNDER_MAINTENANCE`, set by the owner. Says whether the listing takes bookings; booked dates come from bookings (see [Availability](#availability)) |
 | `createdAt` / `updatedAt` | Timestamps                              |
 
 ### Booking
@@ -154,14 +152,20 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
              └───────────┘
 ```
 
-| Action   | Who                                   | Allowed from                | Side effect on equipment            |
+| Action   | Who                                   | Allowed from                | Checks and side effects             |
 |----------|---------------------------------------|-----------------------------|-------------------------------------|
-| Create   | Any `CLIENT`/`ADMIN`; equipment must be `AVAILABLE` | n/a                | `BookingCreatedEvent` sets it to `HIRED` |
-| Confirm  | Owner of the equipment                | `PENDING`                   | none                                |
-| Complete | Owner of the equipment                | `CONFIRMED` or `ACTIVE`     | `BookingCompletedEvent` sets it to `AVAILABLE` |
-| Cancel   | The booking's client or the equipment owner | anything except `COMPLETED`/`CANCELLED` | `BookingCancelledEvent` sets it to `AVAILABLE` |
+| Create   | Any `CLIENT`/`ADMIN`                  | n/a                         | Equipment must be `AVAILABLE` and no `CONFIRMED`/`ACTIVE` booking may overlap the dates (`409`). Other `PENDING` requests for the same dates are fine. |
+| Confirm  | Owner of the equipment                | `PENDING`                   | Re-checks the dates (`409` if taken), then cancels every other `PENDING` booking that overlaps them. |
+| Complete | Owner of the equipment                | `CONFIRMED` or `ACTIVE`     | none                                |
+| Cancel   | The booking's client or the equipment owner | anything except `COMPLETED`/`CANCELLED` | Frees the dates             |
 
 `ACTIVE` is defined in `BookingStatus` but nothing in the code sets it yet.
+
+### Availability
+
+A piece of equipment is booked on a day when a `CONFIRMED` or `ACTIVE` booking covers that day. **Both the start and end dates are booked days**, the same as for pricing: a booking for the 10th to the 12th blocks a new booking starting on the 12th, but not one starting on the 13th.
+
+Two confirmations can't double-book the same dates: confirming a booking locks the equipment's row (`SELECT ... FOR UPDATE`) until the transaction ends, so confirmations for the same equipment run one after the other, and the second one sees the first.
 
 ---
 
@@ -240,8 +244,9 @@ Returns `401` for a wrong email or password.
 | `POST`   | `/equipment`      | OWNER, ADMIN   | Create a listing (`201`). The caller becomes the owner. |
 | `GET`    | `/equipment`      | Authenticated  | List all equipment. Optional `?category=HEAVY_MACHINERY` filter. |
 | `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
-| `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed. Refused (`403`) while it is `HIRED`. |
-| `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`403`) while it is `HIRED`. |
+| `GET`    | `/equipment/{id}/availability` | Authenticated | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
+| `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed; send `"status": "UNDER_MAINTENANCE"` to stop new bookings. |
+| `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`409`) while it has `PENDING`, `CONFIRMED` or `ACTIVE` bookings that end today or later. |
 
 Create request (`CreateEquipmentRequest`):
 
@@ -255,7 +260,7 @@ Create request (`CreateEquipmentRequest`):
 }
 ```
 
-The update request (`UpdateEquipmentRequest`) has the same fields, and none of them are required. Response (`EquipmentResponse`):
+The update request (`UpdateEquipmentRequest`) has the same fields plus `status`, and none of them are required. Response (`EquipmentResponse`):
 
 ```json
 {
@@ -272,11 +277,25 @@ The update request (`UpdateEquipmentRequest`) has the same fields, and none of t
 }
 ```
 
+Availability response (`EquipmentAvailabilityResponse`) for `GET /equipment/1/availability?from=2026-11-01&to=2026-11-30`. `available` is `false` when any day in the range is booked or the listing is under maintenance:
+
+```json
+{
+  "equipmentId": 1,
+  "from": "2026-11-01",
+  "to": "2026-11-30",
+  "available": false,
+  "bookedPeriods": [
+    { "startDate": "2026-11-10", "endDate": "2026-11-12" }
+  ]
+}
+```
+
 ### Bookings: `/api/v1/bookings`
 
 | Method | Path                       | Roles          | Description                                             |
 |--------|----------------------------|----------------|---------------------------------------------------------|
-| `POST` | `/bookings`                | CLIENT, ADMIN  | Book equipment (`201`). Equipment must be `AVAILABLE`.  |
+| `POST` | `/bookings`                | CLIENT, ADMIN  | Book equipment (`201`). `409` if the listing is under maintenance or the dates are already booked. |
 | `GET`  | `/bookings/my-bookings`    | CLIENT, ADMIN  | List the caller's bookings.                             |
 | `GET`  | `/bookings/for-my-equipment` | OWNER, ADMIN | List bookings on the caller's equipment. Optional `?status=PENDING` filter. |
 | `GET`  | `/bookings/{id}`           | Authenticated  | Get a booking. Only its client or the equipment owner may view it. |
@@ -482,6 +501,8 @@ The test suite covers:
 - **Unit tests** for every service implementation, mapper, controller, the JWT provider and filter, the user-details service, the exception classes, `GlobalExceptionHandler` and the event records.
 - **`ModularityTests`**, which checks the Spring Modulith module boundaries and fails the build on illegal cross-module access or dependency cycles.
 - **`HireMeApplicationTests`**, which starts the full application on H2: Flyway runs the migrations and Hibernate validates every entity against the resulting schema, so a missing migration fails the build.
+- **`BookingRepositoryTest`**, which runs the booking queries on H2, including the date-overlap edge cases (same day, back-to-back, containing).
+- **`SecurityErrorResponsesTest`**, which calls the running app over HTTP to check the `401`/`403` responses.
 
 Tests use H2 in memory with the settings in `src/test/resources/application.properties`.
 
@@ -555,7 +576,6 @@ HireMe/
 
 These are behaviours of the current code that you should know about when you work on or consume the API:
 
-- **Equipment is reserved when the booking is created:** the equipment becomes `HIRED` as soon as a booking is created (while it is `PENDING`), not when the owner confirms it. Availability is a single status flag and does not look at date ranges.
 - **`ACTIVE` booking status** exists but is never set.
 
 ---

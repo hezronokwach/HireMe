@@ -45,20 +45,20 @@ class EventRecordsTest {
     @Test
     void equipmentStatusChangedEvent_recordFields() {
         Instant now = Instant.now();
-        EquipmentStatusChangedEvent event = new EquipmentStatusChangedEvent(1L, EquipmentStatusChangedEvent.class.getEnclosingClass() != null ? com.example.hireme.equipment.EquipmentStatus.HIRED : null, now);
+        EquipmentStatusChangedEvent event = new EquipmentStatusChangedEvent(1L, com.example.hireme.equipment.EquipmentStatus.UNDER_MAINTENANCE, now);
 
         // Just test the basic record creation
         assertNotNull(event);
     }
 
     @Test
-    void equipmentStatusChangedEvent_withHiredStatus() {
+    void equipmentStatusChangedEvent_withUnderMaintenanceStatus() {
         Instant now = Instant.now();
         com.example.hireme.equipment.EquipmentStatusChangedEvent event =
-                new com.example.hireme.equipment.EquipmentStatusChangedEvent(1L, com.example.hireme.equipment.EquipmentStatus.HIRED, now);
+                new com.example.hireme.equipment.EquipmentStatusChangedEvent(1L, com.example.hireme.equipment.EquipmentStatus.UNDER_MAINTENANCE, now);
 
         assertEquals(1L, event.equipmentId());
-        assertEquals(com.example.hireme.equipment.EquipmentStatus.HIRED, event.newStatus());
+        assertEquals(com.example.hireme.equipment.EquipmentStatus.UNDER_MAINTENANCE, event.newStatus());
         assertEquals(now, event.occurredAt());
     }
 

@@ -1,11 +1,9 @@
 package com.example.hireme.equipment.internal;
 
 import com.example.hireme.equipment.*;
+import com.example.hireme.equipment.internal.exception.EquipmentInUseException;
 import com.example.hireme.equipment.internal.exception.EquipmentNotFoundException;
 import com.example.hireme.equipment.internal.exception.ForbiddenException;
-import com.example.hireme.shared.event.BookingCancelledEvent;
-import com.example.hireme.shared.event.BookingCompletedEvent;
-import com.example.hireme.shared.event.BookingCreatedEvent;
 import com.example.hireme.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +19,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +33,8 @@ class EquipmentServiceImplTest {
     private UserService userService;
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
+    @Mock
+    private EquipmentBookingChecker equipmentBookingChecker;
 
     @InjectMocks
     private EquipmentServiceImpl equipmentService;
@@ -129,7 +130,7 @@ class EquipmentServiceImplTest {
 
     @Test
     void update_ownerAndAvailable_returnsUpdated() {
-        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null);
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null, null);
         EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
         EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
@@ -143,7 +144,7 @@ class EquipmentServiceImplTest {
 
     @Test
     void update_adminNotListingOwner_returnsUpdated() {
-        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null);
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null, null);
         EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
         EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
@@ -161,22 +162,15 @@ class EquipmentServiceImplTest {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
         when(userService.isAdmin(2L)).thenReturn(false);
 
-        assertThrows(ForbiddenException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null), 2L));
+        assertThrows(ForbiddenException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null, null), 2L));
         verify(equipmentRepository, never()).save(any());
-    }
-
-    @Test
-    void update_hiredEquipment_throwsForbidden() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.HIRED)));
-
-        assertThrows(ForbiddenException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null), 1L));
     }
 
     @Test
     void update_notFound_throwsException() {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(EquipmentNotFoundException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null), 1L));
+        assertThrows(EquipmentNotFoundException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null, null), 1L));
     }
 
     @Test
@@ -210,13 +204,6 @@ class EquipmentServiceImplTest {
     }
 
     @Test
-    void delete_hiredEquipment_throwsForbidden() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.HIRED)));
-
-        assertThrows(ForbiddenException.class, () -> equipmentService.delete(1L, 1L));
-    }
-
-    @Test
     void delete_notFound_throwsException() {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -238,13 +225,6 @@ class EquipmentServiceImplTest {
     }
 
     @Test
-    void isAvailable_hired_returnsFalse() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.HIRED)));
-
-        assertFalse(equipmentService.isAvailable(1L));
-    }
-
-    @Test
     void isAvailable_notFound_throwsException() {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -252,59 +232,60 @@ class EquipmentServiceImplTest {
     }
 
     @Test
-    void markAsHired_setsStatusAndPublishesEvent() {
+    void update_statusChanged_publishesEvent() {
         EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentRepository.save(entity)).thenReturn(entity);
+        doAnswer(invocation -> {
+            entity.setStatus(EquipmentStatus.UNDER_MAINTENANCE);
+            return null;
+        }).when(equipmentMapper).applyUpdate(eq(entity), any());
 
-        equipmentService.markAsHired(1L);
+        equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null, EquipmentStatus.UNDER_MAINTENANCE), 1L);
 
-        assertEquals(EquipmentStatus.HIRED, entity.getStatus());
-        verify(equipmentRepository).save(entity);
         verify(applicationEventPublisher).publishEvent(any(EquipmentStatusChangedEvent.class));
     }
 
     @Test
-    void markAsAvailable_setsStatusAndPublishesEvent() {
-        EquipmentEntity entity = createEntity(EquipmentStatus.HIRED);
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
-
-        equipmentService.markAsAvailable(1L);
-
-        assertEquals(EquipmentStatus.AVAILABLE, entity.getStatus());
-        verify(equipmentRepository).save(entity);
-        verify(applicationEventPublisher).publishEvent(any(EquipmentStatusChangedEvent.class));
-    }
-
-    @Test
-    void onBookingCreatedEvent_marksAsHired() {
-        BookingCreatedEvent event = new BookingCreatedEvent(1L, 1L, Instant.now());
+    void update_statusUnchanged_doesNotPublishEvent() {
         EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentRepository.save(entity)).thenReturn(entity);
 
-        equipmentService.on(event);
+        equipmentService.update(1L, new UpdateEquipmentRequest("New Name", null, null, null, null, null), 1L);
 
-        assertEquals(EquipmentStatus.HIRED, entity.getStatus());
+        verifyNoInteractions(applicationEventPublisher);
     }
 
     @Test
-    void onBookingCancelledEvent_marksAsAvailable() {
-        BookingCancelledEvent event = new BookingCancelledEvent(1L, 1L, Instant.now());
-        EquipmentEntity entity = createEntity(EquipmentStatus.HIRED);
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+    void delete_withOpenBookings_throwsInUse() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+        when(equipmentBookingChecker.hasOpenBookings(1L)).thenReturn(true);
 
-        equipmentService.on(event);
-
-        assertEquals(EquipmentStatus.AVAILABLE, entity.getStatus());
+        assertThrows(EquipmentInUseException.class, () -> equipmentService.delete(1L, 1L));
+        verify(equipmentRepository, never()).delete(any());
     }
 
     @Test
-    void onBookingCompletedEvent_marksAsAvailable() {
-        BookingCompletedEvent event = new BookingCompletedEvent(1L, 1L, Instant.now());
-        EquipmentEntity entity = createEntity(EquipmentStatus.HIRED);
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+    void isAvailable_underMaintenance_returnsFalse() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.UNDER_MAINTENANCE)));
 
-        equipmentService.on(event);
+        assertFalse(equipmentService.isAvailable(1L));
+    }
 
-        assertEquals(EquipmentStatus.AVAILABLE, entity.getStatus());
+    @Test
+    void lockForBooking_existingEquipment_locksRow() {
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+
+        equipmentService.lockForBooking(1L);
+
+        verify(equipmentRepository).findByIdForUpdate(1L);
+    }
+
+    @Test
+    void lockForBooking_notFound_throwsException() {
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EquipmentNotFoundException.class, () -> equipmentService.lockForBooking(1L));
     }
 }

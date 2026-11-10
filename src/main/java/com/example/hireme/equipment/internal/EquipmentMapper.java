@@ -54,6 +54,9 @@ public class EquipmentMapper {
         if (updateEquipmentRequest.location() != null) {
             existingEquipment.setLocation(updateEquipmentRequest.location());
         }
+        if (updateEquipmentRequest.status() != null) {
+            existingEquipment.setStatus(updateEquipmentRequest.status());
+        }
         existingEquipment.setUpdatedAt(Instant.now());
     }
 }

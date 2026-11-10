@@ -82,7 +82,7 @@ class EquipmentControllerTest {
 
     @Test
     void update_validRequest_returnsOk() {
-        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null);
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null, null);
         when(userService.getUserIdByEmail("owner@test.com")).thenReturn(Optional.of(1L));
         when(equipmentService.update(1L, request, 1L)).thenReturn(equipmentResponse());
 
