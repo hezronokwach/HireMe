@@ -32,6 +32,17 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
                                         @Param("endDate") LocalDate endDate,
                                         @Param("statuses") Collection<BookingStatus> statuses);
 
+    // Same overlap rule as findOverlapping (both start and end days count), across all equipment.
+    @Query("""
+            select distinct b.equipmentId from BookingEntity b
+            where b.status in :statuses
+              and b.startDate <= :to
+              and b.endDate >= :from
+            """)
+    List<Long> findEquipmentIdsBookedBetween(@Param("from") LocalDate from,
+                                             @Param("to") LocalDate to,
+                                             @Param("statuses") Collection<BookingStatus> statuses);
+
     List<BookingEntity> findByStatusAndStartDateLessThanEqual(BookingStatus status, LocalDate date);
 
     // Changes the status only if it is still `from`; returns 1 when it did, 0 when the booking had moved on.

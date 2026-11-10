@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Set;
 
 @RestController
@@ -62,6 +64,12 @@ public class EquipmentController {
             @RequestParam(required = false) BigDecimal minRate,
             @Parameter(description = "Highest daily rate in KES, included")
             @RequestParam(required = false) BigDecimal maxRate,
+            @Parameter(description = "Keywords matched against name, location and description (any of them)", example = "tractor plough")
+            @RequestParam(required = false) String q,
+            @Parameter(description = "With `availableTo`: only listings that take bookings and are free on every day. ISO date")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate availableFrom,
+            @Parameter(description = "Last day, included. ISO date; one date alone means that single day")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate availableTo,
             @Parameter(description = "Zero-based page number")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size, 1 to " + PageRequests.MAX_SIZE)
@@ -71,7 +79,7 @@ public class EquipmentController {
             @RequestParam(required = false) String sort
     ) {
         Pageable pageable = PageRequests.of(page, size, sort, SORTABLE_FIELDS, DEFAULT_SORT, "id");
-        EquipmentSearchCriteria criteria = new EquipmentSearchCriteria(category, location, minRate, maxRate);
+        EquipmentSearchCriteria criteria = new EquipmentSearchCriteria(category, location, minRate, maxRate, q, availableFrom, availableTo);
         return ResponseEntity.ok(equipmentService.search(criteria, pageable));
     }
 

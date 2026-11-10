@@ -185,6 +185,13 @@ The `ai` module is the one place that talks to a language model. It uses [Groq](
   - **Out-of-range rate:** a rate below half the cheapest or above twice the dearest comparable listing is dropped.
 
   The prompts live in `src/main/resources/prompts/` (`describe-equipment.st`, `describe-equipment-request.st`). The owner's notes are passed as information, and the model is told to ignore any instructions inside them.
+- **`POST /api/v1/equipment/ai/search`** (any logged-in user) takes a sentence, e.g. `{"query": "I need a tractor in Nakuru next weekend, under 8,000 a day"}`. The model only turns it into the filters of `GET /api/v1/equipment` (category, location, rates, keywords and the `availableFrom`/`availableTo` dates, worked out from today in Africa/Nairobi), and the normal search runs with them. It never queries the database itself. The response carries those `filters` for the UI to show as editable chips, `interpretedBy` (`AI` or `KEYWORDS`), and the page of `results`. Everything the model returns is checked:
+  - **Unknown category:** dropped.
+  - **Dates:** unparsable dates are dropped, past days are moved up to today, backwards ranges are swapped, and ranges over a year are dropped.
+  - **Rates:** negative or backwards rates are dropped.
+  - **Keywords:** used only when there is no category.
+
+  If AI is off, failing or over the user's limit, the search still answers: the query's words are matched against listings instead (`interpretedBy: KEYWORDS`, with a `notice`).
 - **`GET /api/v1/ai/status`** returns `{ "enabled": true, "model": "...", "requestsPerMinute": 10 }`, so the frontend can hide AI buttons when they would only fail.
 
 To turn it on, get a key at [console.groq.com/keys](https://console.groq.com/keys) and add it to `.env` (which is gitignored; never commit a key, and Gitleaks scans every PR):
@@ -291,6 +298,7 @@ Returns `401` for a wrong email or password.
 | `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
 | `GET`    | `/equipment/{id}/availability` | Authenticated | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
 | `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed; send `"status": "UNDER_MAINTENANCE"` to stop new bookings. |
+| `POST`   | `/equipment/ai/search` | Authenticated | Search with a sentence; returns the interpreted filters and the results (see [AI Features](#ai-features)). |
 | `POST`   | `/equipment/ai/describe` | OWNER, ADMIN | Draft a title, description and daily rate with AI (see [AI Features](#ai-features)). Nothing is saved. |
 | `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`409`) while it has `PENDING`, `CONFIRMED` or `ACTIVE` bookings that end today or later. |
 
@@ -334,6 +342,8 @@ The update request (`UpdateEquipmentRequest`) has the same fields plus `status`,
 | `minRate` / `maxRate` | `dailyRateKes` range, both ends included                  |
 | `page`     | Zero-based page number (default `0`)                                 |
 | `size`     | Page size, 1 to 100 (default `20`)                                   |
+| `q`        | Keywords matched against name, location and description (any of them); short and common words are ignored |
+| `availableFrom` / `availableTo` | ISO dates: only listings that take bookings (`AVAILABLE`) and have no `CONFIRMED`/`ACTIVE` booking on any of those days. One date alone means that day; at most 366 days |
 | `sort`     | `dailyRateKes`, `createdAt` or `name`, optionally `,asc` or `,desc` (default `createdAt,desc`, newest first) |
 
 `GET /equipment?category=AGRICULTURAL&location=nakuru&maxRate=8000&sort=dailyRateKes&page=0&size=2` returns a page (`PageResponse`):

@@ -72,7 +72,7 @@ class EquipmentControllerTest {
         when(equipmentService.search(EquipmentSearchCriteria.none(), expected)).thenReturn(page);
 
         ResponseEntity<PageResponse<EquipmentResponse>> result =
-                equipmentController.search(null, null, null, null, 0, 20, null);
+                equipmentController.search(null, null, null, null, null, null, null, 0, 20, null);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertSame(page, result.getBody());
@@ -85,7 +85,7 @@ class EquipmentControllerTest {
         Pageable expected = PageRequest.of(2, 10, Sort.by(Sort.Direction.ASC, "dailyRateKes").and(Sort.by("id")));
         when(equipmentService.search(criteria, expected)).thenReturn(new PageResponse<>(List.of(), 2, 10, 0, 0));
 
-        equipmentController.search(Category.AGRICULTURAL, "nakuru", BigDecimal.valueOf(1000), BigDecimal.valueOf(8000),
+        equipmentController.search(Category.AGRICULTURAL, "nakuru", BigDecimal.valueOf(1000), BigDecimal.valueOf(8000), null, null, null,
                 2, 10, "dailyRateKes,asc");
 
         verify(equipmentService).search(criteria, expected);
@@ -94,14 +94,14 @@ class EquipmentControllerTest {
     @Test
     void search_unknownSortField_throwsInvalidRequest() {
         assertThrows(InvalidRequestException.class,
-                () -> equipmentController.search(null, null, null, null, 0, 20, "ownerId"));
+                () -> equipmentController.search(null, null, null, null, null, null, null, 0, 20, "ownerId"));
         verifyNoInteractions(equipmentService);
     }
 
     @Test
     void search_sizeTooLarge_throwsInvalidRequest() {
         assertThrows(InvalidRequestException.class,
-                () -> equipmentController.search(null, null, null, null, 0, 101, null));
+                () -> equipmentController.search(null, null, null, null, null, null, null, 0, 101, null));
     }
 
     @Test

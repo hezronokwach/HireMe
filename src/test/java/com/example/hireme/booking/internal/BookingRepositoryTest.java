@@ -136,4 +136,17 @@ class BookingRepositoryTest {
         assertEquals(1, bookingRepository.updateStatus(confirmed.getBookingId(), BookingStatus.CONFIRMED, BookingStatus.ACTIVE));
         assertEquals(0, bookingRepository.updateStatus(cancelled.getBookingId(), BookingStatus.CONFIRMED, BookingStatus.ACTIVE));
     }
+
+    @Test
+    void findEquipmentIdsBookedBetween_onlyConfirmedOrActiveOverlaps() {
+        save(EQUIPMENT_ID, DAY_10, DAY_10.plusDays(2), BookingStatus.CONFIRMED);
+        save(EQUIPMENT_ID + 1, DAY_10, DAY_10.plusDays(2), BookingStatus.ACTIVE);
+        save(EQUIPMENT_ID + 2, DAY_10, DAY_10.plusDays(2), BookingStatus.PENDING);
+        save(EQUIPMENT_ID + 3, DAY_10.plusDays(3), DAY_10.plusDays(4), BookingStatus.CONFIRMED);
+
+        List<Long> ids = bookingRepository.findEquipmentIdsBookedBetween(DAY_10.plusDays(2), DAY_10.plusDays(2),
+                BookingServiceImpl.BLOCKING_STATUSES);
+
+        assertEquals(List.of(EQUIPMENT_ID, EQUIPMENT_ID + 1), ids.stream().sorted().toList());
+    }
 }

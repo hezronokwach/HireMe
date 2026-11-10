@@ -63,6 +63,13 @@ class BookingFlowIT extends PostgresIntegrationTest {
         assertEquals(409, book(otherClient, tractor, 12, 12).status(), "last day of the confirmed booking");
         assertEquals(201, book(otherClient, tractor, 13, 13).status(), "the day after is free");
 
+        // The equipment search's date filter agrees: booked on days 10-12, free from day 13.
+        String nakuru = "/api/v1/equipment?location=nakuru%20it-flow";
+        assertEquals(List.of(), ids(get(nakuru + "&availableFrom=" + LocalDate.now().plusDays(11)
+                + "&availableTo=" + LocalDate.now().plusDays(12), otherClient.token()).body(), "id"));
+        assertEquals(List.of(tractor), ids(get(nakuru + "&availableFrom=" + LocalDate.now().plusDays(20),
+                otherClient.token()).body(), "id"));
+
         // The listing can't be deleted while it has open bookings.
         assertEquals(409, delete("/api/v1/equipment/" + tractor, owner.token()).status());
 

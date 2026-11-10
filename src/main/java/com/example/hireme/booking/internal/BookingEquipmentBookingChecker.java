@@ -27,4 +27,9 @@ public class BookingEquipmentBookingChecker implements EquipmentBookingChecker {
         return bookingRepository.existsByEquipmentIdAndStatusInAndEndDateGreaterThanEqual(
                 equipmentId, OPEN_STATUSES, LocalDate.now(clock));
     }
+
+    @Override
+    public Set<Long> findBookedEquipmentIds(LocalDate from, LocalDate to) {
+        return Set.copyOf(bookingRepository.findEquipmentIdsBookedBetween(from, to, BookingServiceImpl.BLOCKING_STATUSES));
+    }
 }

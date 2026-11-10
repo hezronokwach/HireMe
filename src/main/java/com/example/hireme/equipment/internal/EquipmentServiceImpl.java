@@ -16,13 +16,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EquipmentServiceImpl implements EquipmentService {
+
+    static final int MAX_AVAILABILITY_RANGE_DAYS = 366;
 
     private final EquipmentRepository equipmentRepository;
     private final EquipmentMapper equipmentMapper;
@@ -51,9 +56,29 @@ public class EquipmentServiceImpl implements EquipmentService {
     @Override
     public PageResponse<EquipmentResponse> search(EquipmentSearchCriteria criteria, Pageable pageable) {
         validateRates(criteria);
+        EquipmentSearchCriteria withDates = withValidDates(criteria);
+        Set<Long> booked = withDates.hasDates()
+                ? equipmentBookingChecker.findBookedEquipmentIds(withDates.availableFrom(), withDates.availableTo())
+                : Set.of();
         return PageResponse.from(
-                equipmentRepository.findAll(EquipmentSpecifications.matching(criteria), pageable),
+                equipmentRepository.findAll(EquipmentSpecifications.matching(withDates, booked), pageable),
                 equipmentMapper::toCreateResponse);
+    }
+
+    // A single date means that one day. The range may not run backwards or be longer than a year.
+    private static EquipmentSearchCriteria withValidDates(EquipmentSearchCriteria c) {
+        if (!c.hasDates()) {
+            return c;
+        }
+        LocalDate from = c.availableFrom() != null ? c.availableFrom() : c.availableTo();
+        LocalDate to = c.availableTo() != null ? c.availableTo() : c.availableFrom();
+        if (to.isBefore(from)) {
+            throw new InvalidRequestException("'availableTo' cannot be before 'availableFrom'");
+        }
+        if (ChronoUnit.DAYS.between(from, to) >= MAX_AVAILABILITY_RANGE_DAYS) {
+            throw new InvalidRequestException("The availability range cannot be longer than " + MAX_AVAILABILITY_RANGE_DAYS + " days");
+        }
+        return new EquipmentSearchCriteria(c.category(), c.location(), c.minRate(), c.maxRate(), c.keywords(), from, to);
     }
 
     private void validateRates(EquipmentSearchCriteria criteria) {
