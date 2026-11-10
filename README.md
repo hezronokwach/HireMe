@@ -13,6 +13,7 @@ It is a Spring Boot **modular monolith**: one deployable application split into 
 - [Domain Model](#domain-model)
 - [Booking Lifecycle](#booking-lifecycle)
 - [Security](#security)
+- [AI Features](#ai-features)
 - [API Reference](#api-reference)
 - [Error Handling](#error-handling)
 - [Getting Started](#getting-started)
@@ -47,7 +48,8 @@ com.example.hireme
 ├── user/        Registration, login, user lookup         (public API: UserService, AuthService, DTOs, Role)
 ├── equipment/   Equipment listings                       (public API: EquipmentService, EquipmentBookingChecker, DTOs, enums)
 ├── booking/     Bookings, their lifecycle, booked dates  (public API: BookingService, DTOs, BookingStatus)
-└── shared/      OPEN module: security, exceptions, integration events
+├── ai/          Calls to the language model (Groq)       (public API: AiAssistant, AI exceptions, AiStatusResponse)
+└── shared/      OPEN module: security, exceptions, integration events, clock, paging, OpenAPI
 ```
 
 Each module exposes a small public API in its root package (service interfaces, request/response records and enums). Entities, repositories, mappers and service implementations live in an `internal` sub-package that other modules cannot reach. `ModularityTests` runs `ApplicationModules.verify()` to fail the build if a module reaches into another module's internals or if modules depend on each other in a cycle.
@@ -166,6 +168,24 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
 A piece of equipment is booked on a day when a `CONFIRMED` or `ACTIVE` booking covers that day. **Both the start and end dates are booked days**, the same as for pricing: a booking for the 10th to the 12th blocks a new booking starting on the 12th, but not one starting on the 13th.
 
 Two confirmations can't double-book the same dates: confirming a booking locks the equipment's row (`SELECT ... FOR UPDATE`) until the transaction ends, so confirmations for the same equipment run one after the other, and the second one sees the first.
+
+---
+
+## AI Features
+
+The `ai` module is the one place that talks to a language model. It uses [Groq](https://groq.com) through its OpenAI-compatible API, with [Spring AI](https://spring.io/projects/spring-ai) (`spring-ai-openai`, no starter) and the `llama-3.3-70b-versatile` model. Feature modules call the `AiAssistant` interface with a system and a user prompt, and get back either text or a record parsed from JSON. They never see HTTP, keys or retries.
+
+- **Off by default.** It's on only with `HIREME_AI_ENABLED=true`, which also needs `GROQ_API_KEY`. The app refuses to start if AI is enabled without a key. While it's off, the app works normally and AI calls return `503`.
+- **Failures don't spread.** If Groq is down, slow (`hireme.ai.timeout`, default 20 s), rate-limiting us, or returns an unusable answer, the call fails with `503` ("AI features are unavailable right now") after `hireme.ai.max-retries` retries. Features with a non-AI fallback can catch `AiUnavailableException`.
+- **Per-user rate limit:** `hireme.ai.requests-per-minute` (default 10) AI calls per user in any rolling minute, then `429`. It protects the shared Groq quota. It's kept in memory, so it applies per app instance and resets on restart.
+- **`GET /api/v1/ai/status`** returns `{ "enabled": true, "model": "...", "requestsPerMinute": 10 }`, so the frontend can hide AI buttons when they would only fail.
+
+To turn it on, get a key at [console.groq.com/keys](https://console.groq.com/keys) and add it to `.env` (which is gitignored; never commit a key, and Gitleaks scans every PR):
+
+```dotenv
+HIREME_AI_ENABLED=true
+GROQ_API_KEY=<your Groq key>
+```
 
 ---
 
@@ -452,6 +472,9 @@ Edit `.env`:
 DB_USER=postgres
 DB_PASSWORD=<choose a password>
 JWT_SECRET=<a random string of at least 32 characters>
+# Optional, see AI Features
+HIREME_AI_ENABLED=false
+GROQ_API_KEY=
 ```
 
 HS256 needs a key of at least 256 bits, so `JWT_SECRET` must be at least 32 bytes long. One way to generate it is `openssl rand -hex 32`.
@@ -530,6 +553,12 @@ java -jar target/HireMe-0.0.1-SNAPSHOT.jar
 | `app.time-zone`          | n/a                  | `Africa/Nairobi`         | Business time zone: what "today" means for bookings |
 | `app.bookings.activation-cron` | n/a            | `0 5 * * * *` (hourly)   | When confirmed bookings are checked for activation |
 | `springdoc.api-docs.enabled` / `springdoc.swagger-ui.enabled` | n/a | `true` | Serve the OpenAPI spec and Swagger UI; set to `false` to turn them off |
+| `hireme.ai.enabled`      | `HIREME_AI_ENABLED`  | `false`                  | Turn the AI features on (needs `GROQ_API_KEY`) |
+| `hireme.ai.api-key`      | `GROQ_API_KEY`       | none                     | Groq API key; never commit it                  |
+| `hireme.ai.model`        | n/a                  | `llama-3.3-70b-versatile`| Groq model id                                  |
+| `hireme.ai.base-url`     | n/a                  | `https://api.groq.com/openai/v1` | OpenAI-compatible endpoint             |
+| `hireme.ai.timeout` / `hireme.ai.max-retries` | n/a | `20s` / `1`           | Give up on a slow or failing Groq call         |
+| `hireme.ai.requests-per-minute` | n/a           | `10`                     | AI calls per user per rolling minute, then `429` |
 
 Config files:
 
@@ -557,6 +586,7 @@ The test suite covers:
 - **`BookingRepositoryTest`**, which runs the booking queries on H2, including the date-overlap edge cases (same day, back-to-back, containing).
 - **`SecurityErrorResponsesTest`**, which calls the running app over HTTP to check the `401`/`403` responses.
 - **`BookingConcurrentUpdateTest`**, which plays two overlapping changes to one booking step by step (a second transaction commits while the first still holds a stale copy) and checks that the stale one fails instead of overwriting.
+- **`GroqWireTest`**, which runs the real Spring AI client against a fake OpenAI-compatible server started in the test. It checks the request we send to Groq (path, bearer key, model, messages), structured answers, and that a Groq error or a slow answer becomes `503` within the timeout. No real key or network is needed.
 - **`OpenApiDocsTest`**, which fetches `/v3/api-docs` without a token and checks that every endpoint is there with the JWT scheme, real success codes (`201`, `204`), `ErrorResponse` error bodies and unique operation IDs. It also saves the spec to `target/openapi.json`.
 
 Unit tests use H2 in memory with the settings in `src/test/resources/application.properties`.
