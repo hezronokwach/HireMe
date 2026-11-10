@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -40,6 +41,17 @@ public class GlobalExceptionHandler {
             "Validation failed",
             Instant.now(),
             errors
+        );
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        ErrorResponse response = new ErrorResponse(
+            400,
+            "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "'",
+            Instant.now(),
+            null
         );
         return ResponseEntity.badRequest().body(response);
     }

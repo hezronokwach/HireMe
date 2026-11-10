@@ -1,5 +1,6 @@
 package com.example.hireme.shared;
 
+import com.example.hireme.booking.BookingStatus;
 import com.example.hireme.booking.exception.ConflictException;
 import com.example.hireme.shared.exception.ErrorResponse;
 import com.example.hireme.shared.exception.GlobalExceptionHandler;
@@ -16,6 +17,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 import java.util.Map;
@@ -63,6 +65,17 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Validation failed", response.getBody().message());
         assertEquals("Email is required", response.getBody().errors().get("email"));
+    }
+
+    @Test
+    void handleTypeMismatchException_returnsBadRequest() {
+        MethodArgumentTypeMismatchException ex = new MethodArgumentTypeMismatchException(
+                "FOO", BookingStatus.class, "status", null, null);
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleTypeMismatchException(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Invalid value 'FOO' for parameter 'status'", response.getBody().message());
     }
 
     @Test
