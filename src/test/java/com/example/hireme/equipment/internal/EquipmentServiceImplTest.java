@@ -4,6 +4,8 @@ import com.example.hireme.equipment.*;
 import com.example.hireme.equipment.internal.exception.EquipmentInUseException;
 import com.example.hireme.equipment.internal.exception.EquipmentNotFoundException;
 import com.example.hireme.equipment.internal.exception.ForbiddenException;
+import com.example.hireme.shared.exception.InvalidRequestException;
+import com.example.hireme.shared.web.PageResponse;
 import com.example.hireme.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,6 +13,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -105,27 +111,33 @@ class EquipmentServiceImplTest {
     }
 
     @Test
-    void getAll_noFilter_returnsAll() {
+    @SuppressWarnings("unchecked")
+    void search_returnsMappedPage() {
         EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
         EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
-        when(equipmentRepository.findAll()).thenReturn(List.of(entity));
+        Pageable pageable = PageRequest.of(1, 1);
+        when(equipmentRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(entity), pageable, 3));
         when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
 
-        List<EquipmentResponse> result = equipmentService.getAll(null);
+        PageResponse<EquipmentResponse> result = equipmentService.search(EquipmentSearchCriteria.none(), pageable);
 
-        assertEquals(1, result.size());
+        assertEquals(new PageResponse<>(List.of(response), 1, 1, 3, 3), result);
     }
 
     @Test
-    void getAll_withCategoryFilter_returnsFilteredList() {
-        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
-        EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
-        when(equipmentRepository.findByCategory(Category.HEAVY_MACHINERY)).thenReturn(List.of(entity));
-        when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
+    void search_minRateAboveMaxRate_throwsInvalidRequest() {
+        EquipmentSearchCriteria criteria = new EquipmentSearchCriteria(null, null, BigDecimal.valueOf(5000), BigDecimal.valueOf(1000));
 
-        List<EquipmentResponse> result = equipmentService.getAll(Category.HEAVY_MACHINERY);
+        assertThrows(InvalidRequestException.class, () -> equipmentService.search(criteria, PageRequest.of(0, 20)));
+        verifyNoInteractions(equipmentRepository);
+    }
 
-        assertEquals(1, result.size());
+    @Test
+    void search_negativeRate_throwsInvalidRequest() {
+        EquipmentSearchCriteria criteria = new EquipmentSearchCriteria(null, null, BigDecimal.valueOf(-1), null);
+
+        assertThrows(InvalidRequestException.class, () -> equipmentService.search(criteria, PageRequest.of(0, 20)));
     }
 
     @Test
@@ -200,7 +212,7 @@ class EquipmentServiceImplTest {
         when(userService.isAdmin(2L)).thenReturn(false);
 
         assertThrows(ForbiddenException.class, () -> equipmentService.delete(1L, 2L));
-        verify(equipmentRepository, never()).delete(any());
+        verify(equipmentRepository, never()).delete(any(EquipmentEntity.class));
     }
 
     @Test
@@ -263,7 +275,7 @@ class EquipmentServiceImplTest {
         when(equipmentBookingChecker.hasOpenBookings(1L)).thenReturn(true);
 
         assertThrows(EquipmentInUseException.class, () -> equipmentService.delete(1L, 1L));
-        verify(equipmentRepository, never()).delete(any());
+        verify(equipmentRepository, never()).delete(any(EquipmentEntity.class));
     }
 
     @Test

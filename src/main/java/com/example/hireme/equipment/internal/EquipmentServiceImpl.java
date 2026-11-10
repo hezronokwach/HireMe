@@ -4,13 +4,17 @@ import com.example.hireme.equipment.*;
 import com.example.hireme.equipment.internal.exception.EquipmentInUseException;
 import com.example.hireme.equipment.internal.exception.EquipmentNotFoundException;
 import com.example.hireme.equipment.internal.exception.ForbiddenException;
+import com.example.hireme.shared.exception.InvalidRequestException;
+import com.example.hireme.shared.web.PageResponse;
 import com.example.hireme.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -45,16 +49,24 @@ public class EquipmentServiceImpl implements EquipmentService {
     }
 
     @Override
-    public List<EquipmentResponse> getAll(Category categoryFilter) {
-        List<EquipmentEntity> equipment;
-        if (categoryFilter != null) {
-            equipment = equipmentRepository.findByCategory(categoryFilter);
-        } else {
-            equipment = equipmentRepository.findAll();
+    public PageResponse<EquipmentResponse> search(EquipmentSearchCriteria criteria, Pageable pageable) {
+        validateRates(criteria);
+        return PageResponse.from(
+                equipmentRepository.findAll(EquipmentSpecifications.matching(criteria), pageable),
+                equipmentMapper::toCreateResponse);
+    }
+
+    private void validateRates(EquipmentSearchCriteria criteria) {
+        if (isNegative(criteria.minRate()) || isNegative(criteria.maxRate())) {
+            throw new InvalidRequestException("'minRate' and 'maxRate' cannot be negative");
         }
-        return equipment.stream()
-                .map(equipmentMapper::toCreateResponse)
-                .toList();
+        if (criteria.minRate() != null && criteria.maxRate() != null && criteria.minRate().compareTo(criteria.maxRate()) > 0) {
+            throw new InvalidRequestException("'minRate' cannot be greater than 'maxRate'");
+        }
+    }
+
+    private static boolean isNegative(BigDecimal rate) {
+        return rate != null && rate.signum() < 0;
     }
 
     @Override
