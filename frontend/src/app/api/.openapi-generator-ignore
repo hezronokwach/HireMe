@@ -1,0 +1,4 @@
+# Files the generator should not write (see openapitools.json).
+git_push.sh
+README.md
+.gitignore
