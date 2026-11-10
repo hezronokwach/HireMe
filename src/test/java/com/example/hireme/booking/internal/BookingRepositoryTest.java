@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.EnumSet;
@@ -29,6 +30,9 @@ class BookingRepositoryTest {
 
     @Autowired
     private BookingEquipmentBookingChecker bookingChecker;
+
+    @Autowired
+    private Clock clock;
 
     private BookingEntity save(long equipmentId, LocalDate start, LocalDate end, BookingStatus status) {
         BookingEntity booking = new BookingEntity();
@@ -93,7 +97,7 @@ class BookingRepositoryTest {
 
     @Test
     void hasOpenBookings_trueForPendingOrConfirmedEndingTodayOrLater() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         save(EQUIPMENT_ID, today.minusDays(2), today, BookingStatus.PENDING);
 
         assertTrue(bookingChecker.hasOpenBookings(EQUIPMENT_ID));
@@ -101,11 +105,35 @@ class BookingRepositoryTest {
 
     @Test
     void hasOpenBookings_falseForPastOrClosedBookings() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         save(EQUIPMENT_ID, today.minusDays(5), today.minusDays(1), BookingStatus.CONFIRMED);
         save(EQUIPMENT_ID, today.plusDays(1), today.plusDays(3), BookingStatus.CANCELLED);
         save(EQUIPMENT_ID, today.plusDays(1), today.plusDays(3), BookingStatus.COMPLETED);
 
         assertFalse(bookingChecker.hasOpenBookings(EQUIPMENT_ID));
+    }
+
+    @Test
+    void findByStatusAndStartDateLessThanEqual_returnsConfirmedBookingsStartingByTheDate() {
+        BookingEntity startedYesterday = save(EQUIPMENT_ID, DAY_10.minusDays(1), DAY_10.plusDays(1), BookingStatus.CONFIRMED);
+        BookingEntity startsToday = save(EQUIPMENT_ID, DAY_10, DAY_10.plusDays(1), BookingStatus.CONFIRMED);
+        save(EQUIPMENT_ID, DAY_10.plusDays(1), DAY_10.plusDays(2), BookingStatus.CONFIRMED); // tomorrow
+        save(EQUIPMENT_ID, DAY_10, DAY_10.plusDays(1), BookingStatus.PENDING);
+
+        List<BookingEntity> due = bookingRepository.findByStatusAndStartDateLessThanEqual(BookingStatus.CONFIRMED, DAY_10).stream()
+                .filter(b -> b.getEquipmentId() == EQUIPMENT_ID)
+                .toList();
+
+        assertEquals(List.of(startedYesterday.getBookingId(), startsToday.getBookingId()),
+                due.stream().map(BookingEntity::getBookingId).sorted().toList());
+    }
+
+    @Test
+    void updateStatus_changesOnlyWhenStatusStillMatches() {
+        BookingEntity confirmed = save(EQUIPMENT_ID, DAY_10, DAY_10, BookingStatus.CONFIRMED);
+        BookingEntity cancelled = save(EQUIPMENT_ID, DAY_10, DAY_10, BookingStatus.CANCELLED);
+
+        assertEquals(1, bookingRepository.updateStatus(confirmed.getBookingId(), BookingStatus.CONFIRMED, BookingStatus.ACTIVE));
+        assertEquals(0, bookingRepository.updateStatus(cancelled.getBookingId(), BookingStatus.CONFIRMED, BookingStatus.ACTIVE));
     }
 }

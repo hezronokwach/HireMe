@@ -1,5 +1,6 @@
 package com.example.hireme.shared;
 
+import com.example.hireme.shared.event.BookingActivatedEvent;
 import com.example.hireme.shared.event.BookingCancelledEvent;
 import com.example.hireme.shared.event.BookingCompletedEvent;
 import com.example.hireme.shared.event.BookingCreatedEvent;
@@ -70,5 +71,15 @@ class EventRecordsTest {
 
         assertEquals(2L, event.equipmentId());
         assertEquals(com.example.hireme.equipment.EquipmentStatus.AVAILABLE, event.newStatus());
+    }
+
+    @Test
+    void bookingActivatedEvent_recordFields() {
+        Instant now = Instant.now();
+        BookingActivatedEvent event = new BookingActivatedEvent(1L, 2L, now);
+
+        assertEquals(1L, event.bookingId());
+        assertEquals(2L, event.equipmentId());
+        assertEquals(now, event.occurredAt());
     }
 }
