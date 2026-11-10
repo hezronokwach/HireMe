@@ -71,6 +71,20 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public List<BookingResponse> getBookingsForMyEquipment(Long currentOwnerId, BookingStatus status) {
+        List<Long> equipmentIds = equipmentService.getIdsByOwner(currentOwnerId);
+        if (equipmentIds.isEmpty()) {
+            return List.of();
+        }
+        List<BookingEntity> bookings = status == null
+                ? bookingRepository.findByEquipmentIdIn(equipmentIds)
+                : bookingRepository.findByEquipmentIdInAndStatus(equipmentIds, status);
+        return bookings.stream()
+                .map(bookingMapper::toBookingResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public BookingResponse confirm(Long bookingId, Long currentOwnerId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)

@@ -224,6 +224,13 @@ class EquipmentServiceImplTest {
     }
 
     @Test
+    void getIdsByOwner_returnsOwnersEquipmentIds() {
+        when(equipmentRepository.findIdsByOwnerId(1L)).thenReturn(List.of(1L, 2L));
+
+        assertEquals(List.of(1L, 2L), equipmentService.getIdsByOwner(1L));
+    }
+
+    @Test
     void isAvailable_available_returnsTrue() {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
 
