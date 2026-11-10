@@ -31,6 +31,9 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      HIREME_AI_ENABLED: ${HIREME_AI_ENABLED:-false}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      HIREME_AI_MODEL: ${HIREME_AI_MODEL:-}
     depends_on:
       postgres:
         condition: service_healthy
