@@ -278,6 +278,7 @@ The update request (`UpdateEquipmentRequest`) has the same fields, and none of t
 |--------|----------------------------|----------------|---------------------------------------------------------|
 | `POST` | `/bookings`                | CLIENT, ADMIN  | Book equipment (`201`). Equipment must be `AVAILABLE`.  |
 | `GET`  | `/bookings/my-bookings`    | CLIENT, ADMIN  | List the caller's bookings.                             |
+| `GET`  | `/bookings/for-my-equipment` | OWNER, ADMIN | List bookings on the caller's equipment. Optional `?status=PENDING` filter. |
 | `GET`  | `/bookings/{id}`           | Authenticated  | Get a booking. Only its client or the equipment owner may view it. |
 | `PUT`  | `/bookings/{id}/confirm`   | OWNER, ADMIN   | Confirm a `PENDING` booking (equipment owner only).    |
 | `PUT`  | `/bookings/{id}/complete`  | OWNER, ADMIN   | Complete a `CONFIRMED`/`ACTIVE` booking (equipment owner only). |

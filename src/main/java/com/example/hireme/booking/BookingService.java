@@ -6,6 +6,7 @@ public interface BookingService {
     BookingResponse createBooking(CreateBookingRequest createBookingRequest, Long currentClientId);
     BookingResponse getById(Long bookingId, Long currentUserId);
     List<BookingResponse> getMyBookings(Long currentUserId);
+    List<BookingResponse> getBookingsForMyEquipment(Long currentOwnerId, BookingStatus status); // status is optional
     BookingResponse confirm(Long bookingId, Long currentOwnerId);  // owner action
     BookingResponse cancel(Long bookingId, Long currentUserId);    // client or owner
     BookingResponse complete(Long bookingId, Long currentOwnerId); // owner action

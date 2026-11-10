@@ -154,6 +154,44 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void getBookingsForMyEquipment_noStatus_returnsAllBookingsOnOwnersEquipment() {
+        BookingEntity entity = createEntity(BookingStatus.PENDING);
+        when(equipmentService.getIdsByOwner(1L)).thenReturn(List.of(1L, 2L));
+        when(bookingRepository.findByEquipmentIdIn(List.of(1L, 2L))).thenReturn(List.of(entity));
+        BookingResponse response = new BookingResponse(1L, 1L, 2L, null, null, null, BookingStatus.PENDING, null);
+        when(bookingMapper.toBookingResponse(entity)).thenReturn(response);
+
+        List<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, null);
+
+        assertEquals(List.of(response), result);
+        verify(bookingRepository, never()).findByEquipmentIdInAndStatus(any(), any());
+    }
+
+    @Test
+    void getBookingsForMyEquipment_withStatus_filtersByStatus() {
+        BookingEntity entity = createEntity(BookingStatus.PENDING);
+        when(equipmentService.getIdsByOwner(1L)).thenReturn(List.of(1L));
+        when(bookingRepository.findByEquipmentIdInAndStatus(List.of(1L), BookingStatus.PENDING)).thenReturn(List.of(entity));
+        BookingResponse response = new BookingResponse(1L, 1L, 2L, null, null, null, BookingStatus.PENDING, null);
+        when(bookingMapper.toBookingResponse(entity)).thenReturn(response);
+
+        List<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, BookingStatus.PENDING);
+
+        assertEquals(List.of(response), result);
+        verify(bookingRepository, never()).findByEquipmentIdIn(any());
+    }
+
+    @Test
+    void getBookingsForMyEquipment_ownerHasNoEquipment_returnsEmptyWithoutQuery() {
+        when(equipmentService.getIdsByOwner(1L)).thenReturn(List.of());
+
+        List<BookingResponse> result = bookingService.getBookingsForMyEquipment(1L, null);
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(bookingRepository);
+    }
+
+    @Test
     void confirm_pendingBooking_returnsConfirmed() {
         BookingEntity entity = createEntity(BookingStatus.PENDING);
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));

@@ -72,6 +72,17 @@ class BookingControllerTest {
     }
 
     @Test
+    void getBookingsForMyEquipment_passesOwnerAndStatus() {
+        when(userService.getUserIdByEmail("john@test.com")).thenReturn(Optional.of(1L));
+        when(bookingService.getBookingsForMyEquipment(1L, BookingStatus.PENDING)).thenReturn(List.of(bookingResponse()));
+
+        ResponseEntity<List<BookingResponse>> result = bookingController.getBookingsForMyEquipment(BookingStatus.PENDING, userDetails());
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals(1, result.getBody().size());
+    }
+
+    @Test
     void confirm_booking_returnsOk() {
         when(userService.getUserIdByEmail("john@test.com")).thenReturn(Optional.of(1L));
         BookingResponse confirmed = new BookingResponse(1L, 1L, 1L, null, null, null, BookingStatus.CONFIRMED, null);

@@ -9,6 +9,8 @@ public interface EquipmentService {
     EquipmentResponse update(Long equipmentId, UpdateEquipmentRequest updateEquipmentRequest, Long currentUserId);
     void delete(Long equipmentId, Long currentUserId);
 
+    List<Long> getIdsByOwner(Long ownerId);
+
     boolean isAvailable(Long equipmentId);
     void markAsHired(Long equipmentId);
     void markAsAvailable(Long equipmentId);
