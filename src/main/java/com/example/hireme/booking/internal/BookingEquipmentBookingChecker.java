@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.Set;
@@ -19,10 +20,11 @@ public class BookingEquipmentBookingChecker implements EquipmentBookingChecker {
             EnumSet.of(BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.ACTIVE);
 
     private final BookingRepository bookingRepository;
+    private final Clock clock;
 
     @Override
     public boolean hasOpenBookings(Long equipmentId) {
         return bookingRepository.existsByEquipmentIdAndStatusInAndEndDateGreaterThanEqual(
-                equipmentId, OPEN_STATUSES, LocalDate.now());
+                equipmentId, OPEN_STATUSES, LocalDate.now(clock));
     }
 }
