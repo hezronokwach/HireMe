@@ -28,7 +28,7 @@ class PostgresSpecificIT extends PostgresIntegrationTest {
         List<String> versions = jdbcTemplate.queryForList(
                 "select version from flyway_schema_history where success order by installed_rank", String.class);
 
-        assertEquals(List.of("1", "2", "3", "4"), versions);
+        assertEquals(List.of("1", "2", "3", "4", "5"), versions);
     }
 
     @Test
