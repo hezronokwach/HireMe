@@ -113,4 +113,24 @@ class EquipmentSearchTest {
         assertTrue(page.content().isEmpty());
         assertEquals(5, page.totalElements());
     }
+
+    @Test
+    void comparables_sameCategoryAndLocationIgnoringCase() {
+        List<String> names = equipmentRepository
+                .findTop20ByCategoryAndLocationContainingIgnoreCaseOrderByCreatedAtDesc(Category.AGRICULTURAL, "nakuru zq").stream()
+                .map(EquipmentEntity::getName).sorted().toList();
+
+        assertEquals(List.of("Tractor A"), names); // "NAKURU town Zq" doesn't contain "nakuru zq"
+        assertTrue(equipmentRepository.findTop20ByCategoryOrderByCreatedAtDesc(Category.AGRICULTURAL).size() >= 3);
+    }
+
+    @Test
+    void description_upTo1000CharactersFits() {
+        EquipmentEntity e = equipmentRepository.findAll().stream().filter(x -> "Plough".equals(x.getName())).findFirst().orElseThrow();
+        e.setDescription("x".repeat(1000));
+
+        equipmentRepository.saveAndFlush(e);
+
+        assertEquals(1000, equipmentRepository.findById(e.getId()).orElseThrow().getDescription().length());
+    }
 }
