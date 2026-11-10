@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,8 +21,10 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -299,5 +302,36 @@ class EquipmentServiceImplTest {
         when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
 
         assertThrows(EquipmentNotFoundException.class, () -> equipmentService.lockForBooking(1L));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void search_withDates_asksBookingForBookedEquipment_singleDateMeansOneDay() {
+        LocalDate day = LocalDate.of(2030, 1, 20);
+        when(equipmentBookingChecker.findBookedEquipmentIds(day, day)).thenReturn(Set.of(9L));
+        when(equipmentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        equipmentService.search(new EquipmentSearchCriteria(null, null, null, null, null, day, null), PageRequest.of(0, 20));
+
+        verify(equipmentBookingChecker).findBookedEquipmentIds(day, day);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void search_withoutDates_doesNotAskBooking() {
+        when(equipmentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        equipmentService.search(EquipmentSearchCriteria.none(), PageRequest.of(0, 20));
+
+        verifyNoInteractions(equipmentBookingChecker);
+    }
+
+    @Test
+    void search_backwardsOrTooLongDates_throwInvalidRequest() {
+        LocalDate day = LocalDate.of(2030, 1, 20);
+        assertThrows(InvalidRequestException.class, () -> equipmentService.search(
+                new EquipmentSearchCriteria(null, null, null, null, null, day, day.minusDays(1)), PageRequest.of(0, 20)));
+        assertThrows(InvalidRequestException.class, () -> equipmentService.search(
+                new EquipmentSearchCriteria(null, null, null, null, null, day, day.plusDays(366)), PageRequest.of(0, 20)));
     }
 }

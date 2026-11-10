@@ -1,5 +1,8 @@
 package com.example.hireme.equipment.internal;
 
+import com.example.hireme.booking.BookingStatus;
+import com.example.hireme.booking.internal.BookingEntity;
+import com.example.hireme.booking.internal.BookingRepository;
 import com.example.hireme.equipment.Category;
 import com.example.hireme.equipment.EquipmentResponse;
 import com.example.hireme.equipment.EquipmentSearchCriteria;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -132,5 +136,50 @@ class EquipmentSearchTest {
         equipmentRepository.saveAndFlush(e);
 
         assertEquals(1000, equipmentRepository.findById(e.getId()).orElseThrow().getDescription().length());
+    }
+
+    @Test
+    void keywords_matchNameLocationOrDescription_anyWord() {
+        assertEquals(List.of("Excavator", "Tractor A", "Tractor B"),
+                names(new EquipmentSearchCriteria(null, "zq", null, null, "tractor excavator", null, null), "name"));
+        assertEquals(List.of("Plough"), names(new EquipmentSearchCriteria(null, "zq", null, null, "eldoret", null, null), "name"));
+    }
+
+    @Test
+    void availability_leavesOutBookedAndUnderMaintenanceListings() {
+        EquipmentEntity plough = byName("Plough");
+        plough.setStatus(EquipmentStatus.UNDER_MAINTENANCE);
+        equipmentRepository.saveAndFlush(plough);
+        booking(byName("Tractor A").getId(), LocalDate.of(2030, 3, 10), LocalDate.of(2030, 3, 12), BookingStatus.CONFIRMED);
+        booking(byName("Tractor B").getId(), LocalDate.of(2030, 3, 10), LocalDate.of(2030, 3, 12), BookingStatus.PENDING);
+
+        EquipmentSearchCriteria onTheBookedDays = new EquipmentSearchCriteria(Category.AGRICULTURAL, "zq", null, null, null,
+                LocalDate.of(2030, 3, 12), LocalDate.of(2030, 3, 14));
+        EquipmentSearchCriteria dayAfter = new EquipmentSearchCriteria(Category.AGRICULTURAL, "zq", null, null, null,
+                LocalDate.of(2030, 3, 13), null);
+
+        assertEquals(List.of("Tractor B"), names(onTheBookedDays, "name"), "a pending booking doesn't block dates");
+        assertEquals(List.of("Tractor A", "Tractor B"), names(dayAfter, "name"));
+        assertEquals(List.of("Plough", "Tractor A", "Tractor B"),
+                names(new EquipmentSearchCriteria(Category.AGRICULTURAL, "zq", null, null), "name"), "without dates, status doesn't matter");
+    }
+
+    @Autowired
+    private BookingRepository bookingRepository;
+
+    private EquipmentEntity byName(String name) {
+        return equipmentRepository.findAll().stream().filter(e -> name.equals(e.getName())).findFirst().orElseThrow();
+    }
+
+    private void booking(Long equipmentId, LocalDate start, LocalDate end, BookingStatus status) {
+        BookingEntity b = new BookingEntity();
+        b.setEquipmentId(equipmentId);
+        b.setClientId(1L);
+        b.setStartDate(start);
+        b.setEndDate(end);
+        b.setTotalCostKes(BigDecimal.valueOf(1000));
+        b.setStatus(status);
+        b.setCreationDate(Instant.now());
+        bookingRepository.saveAndFlush(b);
     }
 }
