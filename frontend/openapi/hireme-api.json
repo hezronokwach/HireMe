@@ -1186,6 +1186,91 @@
         }
       }
     },
+    "/api/v1/equipment/mine": {
+      "get": {
+        "tags": [
+          "Equipment"
+        ],
+        "summary": "The caller's own listings, one page at a time (OWNER, ADMIN)",
+        "description": "Every listing the caller owns, including those under maintenance.",
+        "operationId": "getMyEquipment",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Zero-based page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Page size, 1 to 100",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "`dailyRateKes`, `createdAt` or `name`, optionally followed by `,asc` or `,desc`. Default `createdAt,desc` (newest first).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseEquipmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/bookings/{id}": {
       "get": {
         "tags": [

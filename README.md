@@ -299,6 +299,7 @@ Returns `401` for a wrong email or password.
 |----------|-------------------|----------------|---------------------------------------------------|
 | `POST`   | `/equipment`      | OWNER, ADMIN   | Create a listing (`201`). The caller becomes the owner. |
 | `GET`    | `/equipment`      | Authenticated  | Search equipment, one page at a time (see [Paging and filters](#paging-and-filters)). |
+| `GET`    | `/equipment/mine` | OWNER, ADMIN   | The caller's own listings, any status, one page at a time (`page`, `size`, `sort` as for the search). |
 | `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
 | `GET`    | `/equipment/{id}/availability` | Authenticated | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
 | `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed; send `"status": "UNDER_MAINTENANCE"` to stop new bookings. |

@@ -59,6 +59,24 @@ class EquipmentSearchTest {
         equipmentRepository.save(e);
     }
 
+    @Test
+    void getByOwner_onlyThatOwnersListings_anyStatus_pagedAndSorted() {
+        EquipmentEntity other = byName("Tent");
+        other.setOwnerId(2L);
+        EquipmentEntity plough = byName("Plough");
+        plough.setStatus(EquipmentStatus.UNDER_MAINTENANCE);
+        equipmentRepository.saveAndFlush(other);
+        equipmentRepository.saveAndFlush(plough);
+
+        Pageable byName = PageRequests.of(0, 3, "name", SORTABLE, "createdAt,desc", "id");
+        PageResponse<EquipmentResponse> first = equipmentService.getByOwner(1L, byName);
+
+        assertEquals(List.of("Excavator", "Plough", "Tractor A"), first.content().stream().map(EquipmentResponse::name).toList());
+        assertEquals(4, first.totalElements());
+        assertEquals(List.of("Tent"), equipmentService.getByOwner(2L, byName).content().stream().map(EquipmentResponse::name).toList());
+        assertEquals(0, equipmentService.getByOwner(99L, byName).totalElements());
+    }
+
     private List<String> names(EquipmentSearchCriteria criteria, String sort) {
         return search(criteria, 0, 100, sort).content().stream().map(EquipmentResponse::name).toList();
     }

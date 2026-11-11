@@ -135,6 +135,11 @@ public class EquipmentServiceImpl implements EquipmentService {
     }
 
     @Override
+    public PageResponse<EquipmentResponse> getByOwner(Long ownerId, Pageable pageable) {
+        return PageResponse.from(equipmentRepository.findByOwnerId(ownerId, pageable), equipmentMapper::toCreateResponse);
+    }
+
+    @Override
     public List<Long> getIdsByOwner(Long ownerId) {
         return equipmentRepository.findIdsByOwnerId(ownerId);
     }

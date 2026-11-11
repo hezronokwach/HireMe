@@ -57,6 +57,23 @@ class EquipmentControllerTest {
     }
 
     @Test
+    void getMine_passesCallerAndPage_newestFirstByDefault() {
+        PageResponse<EquipmentResponse> page = new PageResponse<>(List.of(equipmentResponse()), 0, 20, 1, 1);
+        when(userService.getUserIdByEmail("owner@test.com")).thenReturn(Optional.of(1L));
+        Pageable expected = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by("id")));
+        when(equipmentService.getByOwner(1L, expected)).thenReturn(page);
+
+        ResponseEntity<PageResponse<EquipmentResponse>> result = equipmentController.getMine(0, 20, null, userDetails());
+
+        assertSame(page, result.getBody());
+    }
+
+    @Test
+    void getMine_unknownSortField_throwsInvalidRequest() {
+        assertThrows(InvalidRequestException.class, () -> equipmentController.getMine(0, 20, "ownerId", userDetails()));
+    }
+
+    @Test
     void getById_existingEquipment_returnsOk() {
         when(equipmentService.getById(1L)).thenReturn(equipmentResponse());
 
