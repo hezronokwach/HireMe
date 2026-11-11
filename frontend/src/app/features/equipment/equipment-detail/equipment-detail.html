@@ -46,6 +46,8 @@
                 [equipment]="item"
                 [bookedPeriods]="bookedPeriods()"
                 [lastDay]="lastShownDay"
+                [initialFrom]="from()"
+                [initialTo]="to()"
               />
             } @else {
               <p class="hint">This listing isn't taking bookings right now.</p>
