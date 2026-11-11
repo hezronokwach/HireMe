@@ -137,6 +137,7 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
 | `totalCostKes` | `dailyRateKes × (days between start and end + 1)`, so both dates count |
 | `status`       | `PENDING`, `CONFIRMED`, `ACTIVE`, `COMPLETED`, `CANCELLED`   |
 | `creationDate` | Set when the booking is created                              |
+| `clientName`, `clientPhone` | Only in responses to the equipment's owner (or an admin), from the `user` module in one lookup per page. The phone is only given while the booking is `PENDING`, `CONFIRMED` or `ACTIVE`; otherwise it is `null`. Clients never see these fields. |
 
 ---
 
@@ -403,10 +404,10 @@ Availability response (`EquipmentAvailabilityResponse`) for `GET /equipment/1/av
 |--------|----------------------------|----------------|---------------------------------------------------------|
 | `POST` | `/bookings`                | CLIENT, ADMIN  | Book equipment (`201`). Both dates must be today or later, and both days count, so `startDate = endDate = today` books today. `409` if the listing is under maintenance or the dates are already booked. |
 | `GET`  | `/bookings/my-bookings`    | CLIENT, ADMIN  | The caller's bookings, as a page. |
-| `GET`  | `/bookings/for-my-equipment` | OWNER, ADMIN | Bookings on the caller's equipment, as a page. Optional `?status=PENDING` filter. |
+| `GET`  | `/bookings/for-my-equipment` | OWNER, ADMIN | Bookings on the caller's equipment, as a page, with who booked each one (`clientName`, and `clientPhone` while it is open). Optional `?status=PENDING` filter. |
 
 Both booking lists take `page`, `size` (1 to 100, default 20) and `sort` (`startDate` or `creationDate`, optionally `,asc`/`,desc`; default `creationDate,desc`, newest first), and return the same `PageResponse` shape as the equipment list.
-| `GET`  | `/bookings/{id}`           | Authenticated  | Get a booking. Only its client or the equipment owner may view it. |
+| `GET`  | `/bookings/{id}`           | Authenticated  | Get a booking. Only its client, the equipment owner or an admin may view it. The owner and admin also get the client's name and phone. |
 | `PUT`  | `/bookings/{id}/confirm`   | OWNER, ADMIN   | Confirm a `PENDING` booking (equipment owner only).    |
 | `PUT`  | `/bookings/{id}/complete`  | OWNER, ADMIN   | Complete a `CONFIRMED`/`ACTIVE` booking (equipment owner only). |
 | `PUT`  | `/bookings/{id}/cancel`    | Authenticated  | Cancel a booking (its client or the equipment owner).  |
@@ -432,9 +433,13 @@ Response (`BookingResponse`). Three days at KES 25,000 per day:
   "endDate": "2026-11-03",
   "totalCostKes": 75000,
   "status": "PENDING",
-  "creationDate": "2026-10-26T08:05:00Z"
+  "creationDate": "2026-10-26T08:05:00Z",
+  "clientName": "Jane Wanjiru",
+  "clientPhone": "+254712345678"
 }
 ```
+
+`clientName` and `clientPhone` are `null` unless the caller is the equipment's owner or an admin.
 
 ### Actuator
 
@@ -544,7 +549,7 @@ These pages are open to `OWNER` and `ADMIN` only (`roleGuard`). The header shows
   - **Partial updates:** an edit sends only the fields that changed (the API applies only what it receives), and saving with no changes sends nothing.
   - **Ownership:** another owner's listing can't be edited (the API refuses it anyway).
 - **Write it for me:** with a name and category (plus a location for a rate suggestion, and optional details), `POST /api/v1/equipment/ai/describe` drafts a title and description. It also suggests a rate when there are similar listings to compare with, and says why. The owner copies the text, the rate, or both into the form and can still change them. Nothing is saved until **Create listing**. The section is hidden when AI is off, and it shows the API's message when AI is unavailable or the per-minute limit is reached.
-- **Bookings on my equipment** (`/owner-bookings`, from `GET /api/v1/bookings/for-my-equipment`): earliest first, filtered by status through the URL (`?status=PENDING`). Each booking shows the listing, dates and number of days, total and request date. The buttons follow the API's rules:
+- **Bookings on my equipment** (`/owner-bookings`, from `GET /api/v1/bookings/for-my-equipment`): earliest first, filtered by status through the URL (`?status=PENDING`). Each booking shows the listing, who booked it (with their phone number as a tap-to-call link while the booking is open), dates and number of days, total and request date. The buttons follow the API's rules:
   - **Pending:** Confirm (no question asked) or Decline. Confirming also declines the other pending requests for those days.
   - **Confirmed or Active:** Complete or Cancel.
   - **Completed or Cancelled:** nothing.
