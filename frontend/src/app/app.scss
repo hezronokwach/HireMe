@@ -56,9 +56,23 @@
   padding: 24px 16px;
 }
 
-@media (max-width: 599px) {
+// The email makes room for the navigation on narrower screens (the role chip stays).
+@media (max-width: 959px) {
   .email {
     display: none;
+  }
+}
+
+@media (max-width: 599px) {
+  // Icon-only buttons on phones; their text stays for screen readers.
+  .logout {
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 0;
+
+    mat-icon {
+      margin: 0;
+    }
   }
 
   .nav {
