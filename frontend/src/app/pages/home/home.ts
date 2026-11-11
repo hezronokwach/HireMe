@@ -31,6 +31,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <mat-card-actions>
           @if (session.role === 'CLIENT') {
             <a mat-flat-button routerLink="/equipment">Find equipment</a>
+            <a mat-button routerLink="/my-bookings">My bookings</a>
           } @else {
             <a mat-flat-button routerLink="/my-listings">My listings</a>
             <a mat-button routerLink="/owner-bookings">Bookings on my equipment</a>
