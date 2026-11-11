@@ -1,5 +1,5 @@
 import { provideDayFirstDates } from '../../../core/day-first-dates';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -15,7 +15,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { BookedPeriod, BookingsService, EquipmentResponse } from '../../../api';
 import { errorMessage, fieldErrors } from '../../../core/api-errors';
-import { addDays, startOfToday, toIsoDay } from '../../../core/dates';
+import { addDays, fromIsoDay, startOfToday, toIsoDay } from '../../../core/dates';
 import { formatKes } from '../../equipment/equipment-labels';
 import { bookedDaySet, bookingDays } from '../booking-labels';
 
@@ -63,7 +63,7 @@ export function freeRange(booked: () => Set<string>): ValidatorFn {
   templateUrl: './booking-form.html',
   styleUrl: './booking-form.scss',
 })
-export class BookingForm {
+export class BookingForm implements OnInit {
   private readonly api = inject(BookingsService);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
@@ -73,6 +73,9 @@ export class BookingForm {
   readonly bookedPeriods = input<BookedPeriod[]>([]);
   /** The last day the booked periods are known for. */
   readonly lastDay = input.required<Date>();
+  /** Days to start with (ISO), e.g. the ones the assistant priced. Past or invalid days are ignored. */
+  readonly initialFrom = input<string | undefined>();
+  readonly initialTo = input<string | undefined>();
 
   protected readonly today = startOfToday();
   protected readonly formatKes = formatKes;
@@ -100,6 +103,16 @@ export class BookingForm {
 
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
+
+  ngOnInit(): void {
+    const start = fromIsoDay(this.initialFrom());
+    const end = fromIsoDay(this.initialTo()) ?? start;
+    if (start && end && start >= this.today && end >= start && end <= this.lastDay()) {
+      this.form.setValue({ start, end });
+      // Show right away if those days are taken meanwhile.
+      this.form.markAllAsTouched();
+    }
+  }
 
   /** Booked days and past days can't be chosen in the calendar. */
   protected readonly dateFilter = (date: Date | null): boolean =>

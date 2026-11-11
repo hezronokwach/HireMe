@@ -9,40 +9,9 @@ h1 {
   margin: 0 0 12px;
 }
 
-.ai-form {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-
-  button {
-    margin-top: 8px;
-    height: 48px;
-  }
-}
-
-.ai-field {
-  flex: 1;
-}
-
-.banner {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin: 12px 0 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--mat-sys-secondary-container);
-  color: var(--mat-sys-on-secondary-container);
-
-  &.warning {
-    background: var(--mat-sys-tertiary-container);
-    color: var(--mat-sys-on-tertiary-container);
-  }
-
-  &.error {
-    background: var(--mat-sys-error-container);
-    color: var(--mat-sys-on-error-container);
-  }
+.assistant {
+  display: block;
+  margin-bottom: 8px;
 }
 
 .toolbar {
@@ -194,15 +163,6 @@ h1 {
 }
 
 @media (max-width: 599px) {
-  .ai-form {
-    flex-direction: column;
-    align-items: stretch;
-
-    button {
-      margin-top: 0;
-    }
-  }
-
   .sort {
     width: 100%;
   }

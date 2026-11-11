@@ -168,4 +168,34 @@ describe('BookingForm', () => {
     expect(filter(day(5))).toBe(false);
     expect(filter(day(7))).toBe(true);
   });
+
+  it('starts with the days it was given (e.g. from the assistant), with the total shown', async () => {
+    fixture.componentRef.setInput('initialFrom', toIsoDay(day(1)));
+    fixture.componentRef.setInput('initialTo', toIsoDay(day(3)));
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+
+    expect(el().querySelector('[data-testid="quote"]')?.textContent).toMatch(/3 days/);
+    expect(book().disabled).toBe(false);
+  });
+
+  it('ignores given days in the past, backwards or nonsense, and flags booked ones', async () => {
+    for (const [from, to] of [
+      [toIsoDay(day(-2)), toIsoDay(day(-1))],
+      [toIsoDay(day(3)), toIsoDay(day(1))],
+      ['soon', undefined],
+    ]) {
+      fixture.componentRef.setInput('initialFrom', from);
+      fixture.componentRef.setInput('initialTo', to);
+      fixture.componentInstance.ngOnInit();
+    }
+    await fixture.whenStable();
+    expect(el().querySelector('[data-testid="quote"]')).toBeNull();
+
+    fixture.componentRef.setInput('initialFrom', toIsoDay(day(5)));
+    fixture.componentRef.setInput('initialTo', toIsoDay(day(5)));
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    expect(el().textContent).toContain('These dates include days that are already booked.');
+  });
 });

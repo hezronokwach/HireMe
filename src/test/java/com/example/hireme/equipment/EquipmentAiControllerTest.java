@@ -29,6 +29,8 @@ class EquipmentAiControllerTest {
     @Mock
     private EquipmentAiSearchService aiSearchService;
     @Mock
+    private EquipmentAssistantService assistantService;
+    @Mock
     private UserService userService;
 
     @InjectMocks
@@ -61,5 +63,19 @@ class EquipmentAiControllerTest {
                 controller.search(request, 0, 10, "dailyRateKes", new User("client@test.com", "x", List.of()));
 
         assertSame(result, response.getBody());
+    }
+
+    @Test
+    void chat_passesTheConversationAndCaller() {
+        AssistantChatRequest request = new AssistantChatRequest(List.of(
+                new AssistantChatRequest.Message(AssistantChatRequest.Role.USER, "a tractor in Nakuru", null)));
+        AssistantChatResponse answer = new AssistantChatResponse("Here are two.", List.of(), null, null, List.of());
+        when(userService.getUserIdByEmail("client@test.com")).thenReturn(Optional.of(6L));
+        when(assistantService.chat(request, 6L)).thenReturn(answer);
+
+        ResponseEntity<AssistantChatResponse> response =
+                controller.chat(request, new User("client@test.com", "x", List.of()));
+
+        assertSame(answer, response.getBody());
     }
 }

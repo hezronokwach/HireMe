@@ -134,65 +134,19 @@ describe('EquipmentList', () => {
     searchRequest().flush(page([]));
   });
 
-  it('an AI search turns the sentence into URL filters and says so', async () => {
-    const el = await open('/equipment?sort=dailyRateKes,asc');
-    searchRequest().flush(page([TRACTOR, TENT]));
+  it('hides the hire assistant when AI is off', async () => {
+    const el = await open('/equipment', false);
+    searchRequest().flush(page([]));
     await settle();
-
-    const input = el.querySelector<HTMLInputElement>('[data-testid="ai-query"]')!;
-    input.value = 'tractor in Nakuru under 8000';
-    input.dispatchEvent(new Event('input'));
-    await settle();
-    el.querySelector<HTMLButtonElement>('.ai-form button[type="submit"]')!.click();
-
-    const ai = http.expectOne('/api/v1/equipment/ai/search?page=0&size=12&sort=dailyRateKes%2Casc');
-    expect(ai.request.body).toEqual({ query: 'tractor in Nakuru under 8000' });
-    ai.flush({
-      query: 'tractor in Nakuru under 8000',
-      interpretedBy: 'AI',
-      filters: { category: 'AGRICULTURAL', location: 'Nakuru', maxRate: 8000, keywords: 'tractor' },
-      results: page([TRACTOR]),
-    });
-    await settle();
-
-    expect(TestBed.inject(Router).url).toBe(
-      '/equipment?q=tractor&category=AGRICULTURAL&location=Nakuru&maxRate=8000&sort=dailyRateKes,asc',
-    );
-    searchRequest().flush(page([TRACTOR]));
-    await settle();
-    expect(el.querySelector('[data-testid="ai-outcome"]')?.textContent).toContain(
-      'Filters for “tractor in Nakuru under 8000”',
-    );
-    expect(el.querySelectorAll('mat-chip').length).toBe(4);
+    expect(el.querySelector('app-assistant-panel')).toBeNull();
+    expect(el.querySelector('h1')?.textContent).toContain('Find equipment');
   });
 
-  it('shows the fallback notice when the search used keywords instead of AI', async () => {
-    const el = await open('/equipment', false);
-    searchRequest().flush(page([TRACTOR]));
+  it('shows the hire assistant when AI is on, above the filters', async () => {
+    const el = await open('/equipment', true);
+    searchRequest().flush(page([]));
     await settle();
-    expect(el.querySelector('.ai-search mat-hint')?.textContent).toContain('Matches your words');
-
-    const input = el.querySelector<HTMLInputElement>('[data-testid="ai-query"]')!;
-    input.value = 'tractor';
-    input.dispatchEvent(new Event('input'));
-    await settle();
-    el.querySelector<HTMLButtonElement>('.ai-form button[type="submit"]')!.click();
-    http
-      .expectOne((r) => r.url === '/api/v1/equipment/ai/search')
-      .flush({
-        query: 'tractor',
-        interpretedBy: 'KEYWORDS',
-        notice: 'AI search is unavailable right now, so your words were matched against listings.',
-        filters: { keywords: 'tractor' },
-        results: page([TRACTOR]),
-      });
-    await settle();
-    searchRequest().flush(page([TRACTOR]));
-    await settle();
-
-    expect(el.querySelector('[data-testid="ai-outcome"]')?.textContent).toContain(
-      'AI search is unavailable right now',
-    );
+    expect(el.querySelector('app-assistant-panel')).not.toBeNull();
   });
 
   it('shows an error with a retry button, and an empty state with a way out', async () => {
