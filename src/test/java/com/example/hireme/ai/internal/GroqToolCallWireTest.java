@@ -145,6 +145,30 @@ class GroqToolCallWireTest {
     }
 
     @Test
+    void groqsPerMinuteTokenLimit_waitsAsToldAndAsksAgain() {
+        script.add(new Reply(429, "{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` "
+                + "on tokens per minute (TPM): Limit 8000, Used 7000, Requested 1800. Please try again in 300ms.\","
+                + "\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}"));
+        script.add(answer("Here you go."));
+
+        long started = System.nanoTime();
+        assertEquals("Here you go.", assistant().converse(1L, "s", List.of(ChatTurn.user("hi")), new PriceTool()));
+        assertTrue(System.nanoTime() - started >= 300_000_000L, "waited as Groq asked");
+        assertEquals(2, requests.size());
+    }
+
+    @Test
+    void retryRules() {
+        assertEquals(0, ChatClientAiAssistant.retryAfterMillis(new RuntimeException("400: Tool call validation failed: x")));
+        assertEquals(1600, ChatClientAiAssistant.retryAfterMillis(
+                new RuntimeException("wrapped", new RuntimeException("Rate limit reached ... Please try again in 1.5s."))));
+        assertEquals(-1, ChatClientAiAssistant.retryAfterMillis(
+                new RuntimeException("Rate limit reached ... Please try again in 7m30s.")), "long waits aren't worth it");
+        assertEquals(-1, ChatClientAiAssistant.retryAfterMillis(new RuntimeException("Rate limit reached (daily)")));
+        assertEquals(-1, ChatClientAiAssistant.retryAfterMillis(new RuntimeException("context too long")));
+    }
+
+    @Test
     void otherErrors_areNotRetried_andBecomeUnavailable() {
         script.add(new Reply(400, "{\"error\":{\"message\":\"context too long\"}}"));
 

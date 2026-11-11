@@ -43,6 +43,9 @@ class AiConfig {
                         // Groq rejects `reasoning_content` on earlier assistant messages, which Spring AI would
                         // otherwise send back after a tool call (reasoning models like gpt-oss return it).
                         .replayReasoningContent(false)
+                        // gpt-oss "thinks" in hidden tokens that count against Groq's per-minute token limit;
+                        // our tasks are simple, so a little thinking is enough and answers come faster.
+                        .reasoningEffort("low")
                         .build())
                 .build();
         log.info("AI features are on: model {} at {}", properties.model(), properties.baseUrl());
