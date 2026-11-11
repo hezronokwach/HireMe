@@ -1,8 +1,8 @@
+import { provideDayFirstDates } from '../../../core/day-first-dates';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatCalendarCellClassFunction, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatIconModule } from '@angular/material/icon';
@@ -22,10 +22,11 @@ import { EquipmentAvailabilityResponse, EquipmentResponse, EquipmentService } fr
 import { errorMessage } from '../../../core/api-errors';
 import { AuthService } from '../../../core/auth/auth.service';
 import { addDays, formatRange, fromIsoDay, startOfToday, toIsoDay } from '../../../core/dates';
+import { BookingForm } from '../../bookings/booking-form/booking-form';
 import { categoryIcon, categoryLabel, formatKes, statusLabel } from '../equipment-labels';
 
-/** How far ahead the booked dates are shown (the API's default is also 90 days). */
-export const AVAILABILITY_DAYS = 90;
+/** How far ahead booked dates are loaded and can be booked (the API allows up to 366 days). */
+export const AVAILABILITY_DAYS = 365;
 
 interface Detail {
   state: 'loading' | 'ready' | 'not-found' | 'error';
@@ -39,14 +40,14 @@ interface Detail {
   imports: [
     RouterLink,
     MatButtonModule,
+    BookingForm,
     MatCardModule,
     MatDatepickerModule,
     MatIconModule,
     MatProgressBarModule,
   ],
-  // Date pickers use plain JS Dates (kept out of the initial bundle).
-  // Days written day/month/year, as in Kenya.
-  providers: [provideNativeDateAdapter(), { provide: MAT_DATE_LOCALE, useValue: 'en-GB' }],
+  // Day-first date pickers (kept out of the initial bundle).
+  providers: [provideDayFirstDates()],
   templateUrl: './equipment-detail.html',
   styleUrl: './equipment-detail.scss',
 })
@@ -65,7 +66,6 @@ export class EquipmentDetail {
   protected readonly today = startOfToday();
   protected readonly lastShownDay = addDays(this.today, AVAILABILITY_DAYS);
 
-  protected readonly availabilityDays = AVAILABILITY_DAYS;
   /** The list page (with its filters) this page was opened from, if any. */
   private readonly router = inject(Router);
   protected readonly backLink = this.router.parseUrl(
