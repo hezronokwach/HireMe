@@ -1,0 +1,350 @@
+package com.example.hireme.equipment.internal;
+
+import com.example.hireme.equipment.*;
+import com.example.hireme.equipment.internal.exception.EquipmentInUseException;
+import com.example.hireme.equipment.internal.exception.EquipmentNotFoundException;
+import com.example.hireme.equipment.internal.exception.ForbiddenException;
+import com.example.hireme.shared.exception.InvalidRequestException;
+import com.example.hireme.shared.web.PageResponse;
+import com.example.hireme.user.UserService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class EquipmentServiceImplTest {
+
+    @Mock
+    private EquipmentRepository equipmentRepository;
+    @Mock
+    private EquipmentMapper equipmentMapper;
+    @Mock
+    private UserService userService;
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+    @Mock
+    private EquipmentBookingChecker equipmentBookingChecker;
+
+    @InjectMocks
+    private EquipmentServiceImpl equipmentService;
+
+    private CreateEquipmentRequest createRequest() {
+        return new CreateEquipmentRequest("Excavator", Category.HEAVY_MACHINERY, "Big machine",
+                BigDecimal.valueOf(1000), "Nairobi");
+    }
+
+    private EquipmentEntity createEntity(EquipmentStatus status) {
+        EquipmentEntity entity = new EquipmentEntity();
+        entity.setId(1L);
+        entity.setOwnerId(1L);
+        entity.setName("Excavator");
+        entity.setCategory(Category.HEAVY_MACHINERY);
+        entity.setStatus(status);
+        entity.setDailyRateKes(BigDecimal.valueOf(1000));
+        entity.setCreatedAt(Instant.now());
+        return entity;
+    }
+
+    private EquipmentResponse equipmentResponse(EquipmentStatus status) {
+        return new EquipmentResponse(1L, 1L, "Excavator", Category.HEAVY_MACHINERY,
+                "Big machine", BigDecimal.valueOf(1000), "Nairobi", status, Instant.now(), null);
+    }
+
+    @Test
+    void create_ownerUser_returnsResponse() {
+        CreateEquipmentRequest request = createRequest();
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
+
+        when(userService.isOwner(1L)).thenReturn(true);
+        when(equipmentMapper.requestToEntity(request, 1L)).thenReturn(entity);
+        when(equipmentRepository.save(entity)).thenReturn(entity);
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
+
+        EquipmentResponse result = equipmentService.create(request, 1L);
+
+        assertNotNull(result);
+        assertEquals("Excavator", result.name());
+    }
+
+    @Test
+    void create_nonOwnerUser_throwsForbidden() {
+        when(userService.isOwner(1L)).thenReturn(false);
+
+        assertThrows(ForbiddenException.class, () -> equipmentService.create(createRequest(), 1L));
+    }
+
+    @Test
+    void getById_existingEquipment_returnsResponse() {
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
+
+        EquipmentResponse result = equipmentService.getById(1L);
+
+        assertEquals("Excavator", result.name());
+    }
+
+    @Test
+    void getById_notFound_throwsException() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EquipmentNotFoundException.class, () -> equipmentService.getById(1L));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void search_returnsMappedPage() {
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
+        Pageable pageable = PageRequest.of(1, 1);
+        when(equipmentRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(entity), pageable, 3));
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
+
+        PageResponse<EquipmentResponse> result = equipmentService.search(EquipmentSearchCriteria.none(), pageable);
+
+        assertEquals(new PageResponse<>(List.of(response), 1, 1, 3, 3), result);
+    }
+
+    @Test
+    void search_minRateAboveMaxRate_throwsInvalidRequest() {
+        EquipmentSearchCriteria criteria = new EquipmentSearchCriteria(null, null, BigDecimal.valueOf(5000), BigDecimal.valueOf(1000));
+
+        assertThrows(InvalidRequestException.class, () -> equipmentService.search(criteria, PageRequest.of(0, 20)));
+        verifyNoInteractions(equipmentRepository);
+    }
+
+    @Test
+    void search_negativeRate_throwsInvalidRequest() {
+        EquipmentSearchCriteria criteria = new EquipmentSearchCriteria(null, null, BigDecimal.valueOf(-1), null);
+
+        assertThrows(InvalidRequestException.class, () -> equipmentService.search(criteria, PageRequest.of(0, 20)));
+    }
+
+    @Test
+    void update_ownerAndAvailable_returnsUpdated() {
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null, null);
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentRepository.save(entity)).thenReturn(entity);
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
+
+        EquipmentResponse result = equipmentService.update(1L, request, 1L);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void update_adminNotListingOwner_returnsUpdated() {
+        UpdateEquipmentRequest request = new UpdateEquipmentRequest("New Name", null, null, null, null, null);
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        EquipmentResponse response = equipmentResponse(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(userService.isAdmin(2L)).thenReturn(true);
+        when(equipmentRepository.save(entity)).thenReturn(entity);
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(response);
+
+        EquipmentResponse result = equipmentService.update(1L, request, 2L);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void update_notListingOwner_throwsForbidden() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+        when(userService.isAdmin(2L)).thenReturn(false);
+
+        assertThrows(ForbiddenException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null, null), 2L));
+        verify(equipmentRepository, never()).save(any());
+    }
+
+    @Test
+    void update_notFound_throwsException() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EquipmentNotFoundException.class, () -> equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null, null), 1L));
+    }
+
+    @Test
+    void delete_ownerAndAvailable_deletes() {
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        equipmentService.delete(1L, 1L);
+
+        verify(equipmentRepository).delete(entity);
+    }
+
+    @Test
+    void delete_adminNotListingOwner_deletes() {
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(userService.isAdmin(2L)).thenReturn(true);
+
+        equipmentService.delete(1L, 2L);
+
+        verify(equipmentRepository).delete(entity);
+    }
+
+    @Test
+    void delete_notListingOwner_throwsForbidden() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+        when(userService.isAdmin(2L)).thenReturn(false);
+
+        assertThrows(ForbiddenException.class, () -> equipmentService.delete(1L, 2L));
+        verify(equipmentRepository, never()).delete(any(EquipmentEntity.class));
+    }
+
+    @Test
+    void delete_notFound_throwsException() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EquipmentNotFoundException.class, () -> equipmentService.delete(1L, 1L));
+    }
+
+    @Test
+    void getByOwner_returnsTheOwnersPage() {
+        Pageable pageable = PageRequest.of(0, 20);
+        EquipmentEntity entity = createEntity(EquipmentStatus.UNDER_MAINTENANCE);
+        when(equipmentRepository.findByOwnerId(1L, pageable)).thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(null);
+
+        PageResponse<EquipmentResponse> page = equipmentService.getByOwner(1L, pageable);
+
+        assertEquals(1, page.totalElements());
+        assertEquals(1, page.content().size());
+    }
+
+    @Test
+    void getIdsByOwner_returnsOwnersEquipmentIds() {
+        when(equipmentRepository.findIdsByOwnerId(1L)).thenReturn(List.of(1L, 2L));
+
+        assertEquals(List.of(1L, 2L), equipmentService.getIdsByOwner(1L));
+    }
+
+    @Test
+    void isAvailable_available_returnsTrue() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+
+        assertTrue(equipmentService.isAvailable(1L));
+    }
+
+    @Test
+    void isAvailable_notFound_throwsException() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EquipmentNotFoundException.class, () -> equipmentService.isAvailable(1L));
+    }
+
+    @Test
+    void update_statusChanged_publishesEvent() {
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentRepository.save(entity)).thenReturn(entity);
+        doAnswer(invocation -> {
+            entity.setStatus(EquipmentStatus.UNDER_MAINTENANCE);
+            return null;
+        }).when(equipmentMapper).applyUpdate(eq(entity), any());
+
+        equipmentService.update(1L, new UpdateEquipmentRequest(null, null, null, null, null, EquipmentStatus.UNDER_MAINTENANCE), 1L);
+
+        verify(applicationEventPublisher).publishEvent(any(EquipmentStatusChangedEvent.class));
+    }
+
+    @Test
+    void update_statusUnchanged_doesNotPublishEvent() {
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentRepository.save(entity)).thenReturn(entity);
+
+        equipmentService.update(1L, new UpdateEquipmentRequest("New Name", null, null, null, null, null), 1L);
+
+        verifyNoInteractions(applicationEventPublisher);
+    }
+
+    @Test
+    void delete_withOpenBookings_throwsInUse() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+        when(equipmentBookingChecker.hasOpenBookings(1L)).thenReturn(true);
+
+        assertThrows(EquipmentInUseException.class, () -> equipmentService.delete(1L, 1L));
+        verify(equipmentRepository, never()).delete(any(EquipmentEntity.class));
+    }
+
+    @Test
+    void isAvailable_underMaintenance_returnsFalse() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.UNDER_MAINTENANCE)));
+
+        assertFalse(equipmentService.isAvailable(1L));
+    }
+
+    @Test
+    void lockForBooking_existingEquipment_locksRow() {
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(createEntity(EquipmentStatus.AVAILABLE)));
+
+        equipmentService.lockForBooking(1L);
+
+        verify(equipmentRepository).findByIdForUpdate(1L);
+    }
+
+    @Test
+    void lockForBooking_notFound_throwsException() {
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EquipmentNotFoundException.class, () -> equipmentService.lockForBooking(1L));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void search_withDates_asksBookingForBookedEquipment_singleDateMeansOneDay() {
+        LocalDate day = LocalDate.of(2030, 1, 20);
+        when(equipmentBookingChecker.findBookedEquipmentIds(day, day)).thenReturn(Set.of(9L));
+        when(equipmentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        equipmentService.search(new EquipmentSearchCriteria(null, null, null, null, null, day, null), PageRequest.of(0, 20));
+
+        verify(equipmentBookingChecker).findBookedEquipmentIds(day, day);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void search_withoutDates_doesNotAskBooking() {
+        when(equipmentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        equipmentService.search(EquipmentSearchCriteria.none(), PageRequest.of(0, 20));
+
+        verifyNoInteractions(equipmentBookingChecker);
+    }
+
+    @Test
+    void search_backwardsOrTooLongDates_throwInvalidRequest() {
+        LocalDate day = LocalDate.of(2030, 1, 20);
+        assertThrows(InvalidRequestException.class, () -> equipmentService.search(
+                new EquipmentSearchCriteria(null, null, null, null, null, day, day.minusDays(1)), PageRequest.of(0, 20)));
+        assertThrows(InvalidRequestException.class, () -> equipmentService.search(
+                new EquipmentSearchCriteria(null, null, null, null, null, day, day.plusDays(366)), PageRequest.of(0, 20)));
+    }
+}

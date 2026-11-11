@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/@openapitools/openapi-generator-cli/config.schema.json",
+  "spaces": 2,
+  "generator-cli": {
+    "version": "7.26.0",
+    "generators": {
+      "hireme": {
+        "generatorName": "typescript-angular",
+        "inputSpec": "openapi/hireme-api.json",
+        "output": "src/app/api",
+        "additionalProperties": {
+          "ngVersion": "22.2.0",
+          "providedIn": "root",
+          "stringEnums": true,
+          "enumPropertyNaming": "original",
+          "supportsES6": true,
+          "fileNaming": "kebab-case"
+        }
+      }
+    }
+  }
+}

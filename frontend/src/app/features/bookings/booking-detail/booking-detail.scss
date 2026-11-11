@@ -1,0 +1,58 @@
+@use '../../owner/owner-page';
+@use '../booking-status';
+
+:host {
+  max-width: 640px;
+}
+
+.back {
+  margin: 0 0 8px -12px;
+}
+
+.card {
+  padding: 20px;
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h1 {
+  font: var(--mat-sys-headline-small);
+  margin: 0;
+
+  a {
+    color: inherit;
+  }
+}
+
+.help {
+  margin: 8px 0 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 24px;
+  margin: 0;
+}
+
+dt {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+dd {
+  margin: 0;
+}
+
+.actions {
+  margin-top: 20px;
+}
+
+.danger {
+  --mat-button-outlined-label-text-color: var(--mat-sys-error);
+}

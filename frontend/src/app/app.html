@@ -1,0 +1,51 @@
+<mat-toolbar class="header">
+  <a class="brand" routerLink="/">HireMe</a>
+  @if (auth.isLoggedIn()) {
+    <nav class="nav">
+      <a mat-button routerLink="/equipment" routerLinkActive="active">
+        <mat-icon>search</mat-icon>
+        Find equipment
+      </a>
+      @if (auth.hasRole('CLIENT')) {
+        <a mat-button routerLink="/my-bookings" routerLinkActive="active">
+          <mat-icon>event_available</mat-icon>
+          My bookings
+        </a>
+      }
+      @if (auth.hasRole('OWNER', 'ADMIN')) {
+        <a mat-button routerLink="/my-listings" routerLinkActive="active">
+          <mat-icon>inventory_2</mat-icon>
+          My listings
+        </a>
+        <a mat-button routerLink="/owner-bookings" routerLinkActive="active">
+          <mat-icon>event_note</mat-icon>
+          Bookings
+        </a>
+      }
+    </nav>
+  }
+  <span class="spacer"></span>
+  @if (auth.currentSession(); as session) {
+    <span class="user" data-testid="current-user">
+      <span class="email">{{ session.email }}</span>
+      <span class="role">{{ roleLabels[session.role] }}</span>
+    </span>
+    <button
+      mat-stroked-button
+      type="button"
+      class="logout"
+      aria-label="Log out"
+      (click)="auth.logout()"
+    >
+      <mat-icon>logout</mat-icon>
+      Log out
+    </button>
+  } @else {
+    <a mat-button routerLink="/login">Log in</a>
+    <a mat-flat-button routerLink="/register">Create account</a>
+  }
+</mat-toolbar>
+
+<main class="content">
+  <router-outlet />
+</main>

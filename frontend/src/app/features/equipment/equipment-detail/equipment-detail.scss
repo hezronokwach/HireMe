@@ -1,0 +1,149 @@
+:host {
+  display: block;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.back {
+  margin: 0 0 8px -12px;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  grid-template-areas:
+    'header booking'
+    'description booking'
+    'availability availability';
+  gap: 16px 32px;
+}
+
+header {
+  grid-area: header;
+}
+
+h1 {
+  font: var(--mat-sys-headline-medium);
+  margin: 8px 0 4px;
+}
+
+h2 {
+  font: var(--mat-sys-title-large);
+  margin: 0 0 8px;
+}
+
+.category,
+.location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.booking {
+  grid-area: booking;
+  align-self: start;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.rate strong {
+  font: var(--mat-sys-headline-small);
+  color: var(--mat-sys-primary);
+}
+
+.status {
+  color: var(--mat-sys-primary);
+  font: var(--mat-sys-label-large);
+
+  &.unavailable {
+    color: var(--mat-sys-tertiary);
+  }
+}
+
+.hint {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.description {
+  grid-area: description;
+
+  p {
+    white-space: pre-line;
+    margin: 0;
+  }
+}
+
+.availability {
+  grid-area: availability;
+}
+
+.availability-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+mat-calendar {
+  width: 320px;
+  max-width: 100%;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+}
+
+// Booked days, from dateClass().
+:host ::ng-deep .booked-day .mat-calendar-body-cell-content {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  text-decoration: line-through;
+}
+
+.periods {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--mat-sys-error);
+}
+
+.free {
+  margin: 0;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+@media (max-width: 767px) {
+  .detail {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'header' 'booking' 'description' 'availability';
+  }
+}

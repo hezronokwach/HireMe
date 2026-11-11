@@ -1,0 +1,42 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate class="booking-form">
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Your dates</mat-label>
+    <mat-date-range-input
+      [rangePicker]="picker"
+      [min]="today"
+      [max]="lastDay()"
+      [dateFilter]="dateFilter"
+    >
+      <input matStartDate formControlName="start" placeholder="First day" data-testid="start" />
+      <input matEndDate formControlName="end" placeholder="Last day" data-testid="end" />
+    </mat-date-range-input>
+    <mat-hint>Booked days can't be picked. One day? Pick it twice.</mat-hint>
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-date-range-picker #picker />
+  </mat-form-field>
+
+  @if (form.hasError('overlapsBooking')) {
+    <p class="problem" role="alert">These dates include days that are already booked.</p>
+  }
+
+  @if (form.hasError('overlapsBooking') ? null : quote(); as q) {
+    <p class="quote" data-testid="quote">
+      {{ q.days }} {{ q.days === 1 ? 'day' : 'days' }} × {{ formatKes(equipment().dailyRateKes) }} =
+      <strong>{{ formatKes(q.total) }}</strong>
+    </p>
+  }
+
+  @if (error()) {
+    <p class="problem" role="alert" data-testid="booking-error">{{ error() }}</p>
+  }
+
+  <button
+    mat-flat-button
+    type="submit"
+    [disabled]="submitting() || !form.controls.start.value || form.invalid"
+    data-testid="book"
+  >
+    {{ submitting() ? 'Sending…' : 'Request booking' }}
+  </button>
+  <p class="hint">The owner confirms or declines your request; you can follow it in My bookings.</p>
+</form>

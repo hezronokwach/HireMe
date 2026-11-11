@@ -1,0 +1,121 @@
+<header class="page-header">
+  <h1>Bookings on my equipment</h1>
+</header>
+
+<mat-chip-listbox
+  class="filters"
+  aria-label="Show bookings by status"
+  [value]="status()"
+  (change)="filterBy($event.value ?? null)"
+>
+  <mat-chip-option [value]="null">All</mat-chip-option>
+  @for (option of statuses; track option.value) {
+    <mat-chip-option [value]="option.value">{{ option.label }}</mat-chip-option>
+  }
+</mat-chip-listbox>
+
+@if (bookings().state === 'loading') {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading bookings" />
+}
+
+@switch (bookings().state) {
+  @case ('error') {
+    <div class="state" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <p>{{ bookings().error }}</p>
+      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+    </div>
+  }
+  @default {
+    @if (bookings().page; as page) {
+      @if (page.content?.length) {
+        <ul class="list" [class.stale]="bookings().state === 'loading'">
+          @for (booking of page.content; track booking.bookingId) {
+            <li>
+              <mat-card
+                appearance="outlined"
+                class="row"
+                [attr.data-testid]="'booking-' + booking.bookingId"
+              >
+                <div class="info">
+                  <a class="name" [routerLink]="['/equipment', booking.equipmentId]">
+                    {{ equipmentName()(booking.equipmentId) }}
+                  </a>
+                  <span class="dates">
+                    <mat-icon aria-hidden="true">event</mat-icon>
+                    {{ formatRange(booking.startDate!, booking.endDate!) }}
+                    ({{ bookingDays(booking.startDate!, booking.endDate!) }}
+                    {{ bookingDays(booking.startDate!, booking.endDate!) === 1 ? 'day' : 'days' }})
+                  </span>
+                  @if (booking.clientName) {
+                    <span class="client" data-testid="client">
+                      <mat-icon aria-hidden="true">person</mat-icon>
+                      {{ booking.clientName }}
+                      @if (booking.clientPhone) {
+                        ·
+                        <a
+                          class="phone"
+                          [href]="'tel:' + booking.clientPhone"
+                          [attr.aria-label]="
+                            'Call ' + booking.clientName + ' on ' + booking.clientPhone
+                          "
+                          >{{ booking.clientPhone }}</a
+                        >
+                      }
+                    </span>
+                  }
+                  <span class="meta">
+                    <strong>{{ formatKes(booking.totalCostKes) }}</strong>
+                    @if (booking.creationDate) {
+                      · requested {{ formatDay(booking.creationDate.slice(0, 10)) }}
+                    }
+                  </span>
+                </div>
+                <span class="status" [attr.data-status]="booking.status">
+                  {{ bookingStatusLabel(booking.status) }}
+                </span>
+                @if (ownerActions(booking.status).length) {
+                  <div class="actions">
+                    @for (action of ownerActions(booking.status); track action) {
+                      <button
+                        mat-button
+                        type="button"
+                        [class.primary]="action === 'confirm'"
+                        [class.danger]="action === 'decline' || action === 'cancel'"
+                        [disabled]="busy().has(booking.bookingId!)"
+                        (click)="act(booking, action)"
+                      >
+                        <mat-icon>{{ actions[action].icon }}</mat-icon>
+                        {{ actions[action].label }}
+                      </button>
+                    }
+                  </div>
+                }
+              </mat-card>
+            </li>
+          }
+        </ul>
+        @if ((page.totalElements ?? 0) > pageSize) {
+          <mat-paginator
+            [length]="page.totalElements ?? 0"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize"
+            [hidePageSize]="true"
+            (page)="changePage($event)"
+            aria-label="Pages of bookings"
+          />
+        }
+      } @else if (bookings().state === 'ready') {
+        <div class="state">
+          <mat-icon aria-hidden="true">event_available</mat-icon>
+          @if (status(); as s) {
+            <p>No {{ bookingStatusLabel(s).toLowerCase() }} bookings.</p>
+            <button mat-stroked-button type="button" (click)="filterBy(null)">Show all</button>
+          } @else {
+            <p>No bookings yet. Requests from clients will show up here.</p>
+          }
+        </div>
+      }
+    }
+  }
+}
