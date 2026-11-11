@@ -699,6 +699,8 @@ java -jar target/HireMe-0.0.1-SNAPSHOT.jar
 | `hireme.ai.base-url`     | n/a                  | `https://api.groq.com/openai/v1` | OpenAI-compatible endpoint             |
 | `hireme.ai.timeout` / `hireme.ai.max-retries` | n/a | `20s` / `1`           | Give up on a slow or failing Groq call         |
 | `hireme.ai.requests-per-minute` | n/a           | `10`                     | AI calls per user per rolling minute, then `429` |
+| `hireme.demo-listings.enabled` | `HIREME_DEMO_LISTINGS` | `false`     | On start, add a demo owner (`demo-owner@hireme.example`) with 15 listings across all categories and towns, once: nothing is added when that owner already exists |
+| `hireme.demo-listings.owner-password` | `HIREME_DEMO_OWNER_PASSWORD` | none | Password for the demo owner (at least 8 characters); without it, a random one nobody knows |
 
 Config files:
 
