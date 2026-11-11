@@ -1,0 +1,96 @@
+<header class="page-header">
+  <h1>My listings</h1>
+  <a mat-flat-button routerLink="/my-listings/new">
+    <mat-icon>add</mat-icon>
+    New listing
+  </a>
+</header>
+
+@if (listings().state === 'loading') {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading your listings" />
+}
+
+@switch (listings().state) {
+  @case ('error') {
+    <div class="state" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <p>{{ listings().error }}</p>
+      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+    </div>
+  }
+  @default {
+    @if (listings().page; as page) {
+      @if (page.content?.length) {
+        <ul class="list" [class.stale]="listings().state === 'loading'">
+          @for (item of page.content; track item.id) {
+            <li>
+              <mat-card appearance="outlined" class="row">
+                <div class="info">
+                  <span class="category">
+                    <mat-icon aria-hidden="true">{{ categoryIcon(item.category) }}</mat-icon>
+                    {{ categoryLabel(item.category) }}
+                  </span>
+                  <a class="name" [routerLink]="['/equipment', item.id]">{{ item.name }}</a>
+                  <span class="meta">
+                    {{ item.location }} · <strong>{{ formatKes(item.dailyRateKes) }}</strong> / day
+                  </span>
+                </div>
+                <span
+                  class="status"
+                  [class.paused]="item.equipmentStatus !== 'AVAILABLE'"
+                  data-testid="status"
+                >
+                  {{ statusLabel(item.equipmentStatus) }}
+                </span>
+                <div class="actions">
+                  <a mat-button [routerLink]="['/my-listings', item.id, 'edit']">
+                    <mat-icon>edit</mat-icon>
+                    Edit
+                  </a>
+                  <button
+                    mat-button
+                    type="button"
+                    (click)="toggleBookings(item)"
+                    [disabled]="busy().has(item.id!)"
+                  >
+                    <mat-icon>{{
+                      item.equipmentStatus === 'AVAILABLE' ? 'pause_circle' : 'play_circle'
+                    }}</mat-icon>
+                    {{ item.equipmentStatus === 'AVAILABLE' ? 'Pause bookings' : 'Take bookings' }}
+                  </button>
+                  <button
+                    mat-button
+                    type="button"
+                    class="delete"
+                    (click)="remove(item)"
+                    [disabled]="busy().has(item.id!)"
+                    [attr.aria-label]="'Delete ' + item.name"
+                  >
+                    <mat-icon>delete</mat-icon>
+                    Delete
+                  </button>
+                </div>
+              </mat-card>
+            </li>
+          }
+        </ul>
+        @if ((page.totalElements ?? 0) > pageSize) {
+          <mat-paginator
+            [length]="page.totalElements ?? 0"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize"
+            [hidePageSize]="true"
+            (page)="changePage($event)"
+            aria-label="Pages of your listings"
+          />
+        }
+      } @else if (listings().state === 'ready') {
+        <div class="state">
+          <mat-icon aria-hidden="true">inventory_2</mat-icon>
+          <p>You haven't listed any equipment yet.</p>
+          <a mat-flat-button routerLink="/my-listings/new">List your first item</a>
+        </div>
+      }
+    }
+  }
+}
