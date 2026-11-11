@@ -1,5 +1,4 @@
 import { Params } from '@angular/router';
-import { EquipmentSearchCriteria } from '../../api';
 import { formatRange } from '../../core/dates';
 import { Category, categoryLabel, formatKes, isCategory } from './equipment-labels';
 
@@ -100,23 +99,6 @@ export function toParams(query: EquipmentQuery): Params {
   put('page', query.page, 0);
   put('size', query.size, DEFAULT_SIZE);
   return params;
-}
-
-/** The filters an AI search worked out, as a query (keeping the user's sort and page size). */
-export function fromCriteria(
-  criteria: EquipmentSearchCriteria | undefined,
-  current: EquipmentQuery,
-): EquipmentQuery {
-  return parseQuery({
-    ...toParams({ ...EMPTY_QUERY, sort: current.sort, size: current.size }),
-    ...(criteria?.category ? { category: criteria.category } : {}),
-    ...(criteria?.location ? { location: criteria.location } : {}),
-    ...(criteria?.minRate != null ? { minRate: String(criteria.minRate) } : {}),
-    ...(criteria?.maxRate != null ? { maxRate: String(criteria.maxRate) } : {}),
-    ...(criteria?.keywords ? { q: criteria.keywords } : {}),
-    ...(criteria?.availableFrom ? { from: criteria.availableFrom } : {}),
-    ...(criteria?.availableTo ? { to: criteria.availableTo } : {}),
-  });
 }
 
 /** The query without one filter, back on the first page. */

@@ -1,8 +1,6 @@
-import { EquipmentSearchCriteriaCategoryEnum } from '../../api';
 import {
   EMPTY_QUERY,
   filterChips,
-  fromCriteria,
   parseQuery,
   toParams,
   withoutFilter,
@@ -58,38 +56,6 @@ describe('equipment query', () => {
     expect(toParams({ ...EMPTY_QUERY, category: 'EVENT_SETUP', page: 1 })).toEqual({
       category: 'EVENT_SETUP',
       page: '1',
-    });
-  });
-
-  it('turns AI criteria into a query, keeping sort and page size but not the page', () => {
-    const current = { ...EMPTY_QUERY, sort: 'dailyRateKes,asc' as const, size: 24, page: 3 };
-    expect(
-      fromCriteria(
-        {
-          category: EquipmentSearchCriteriaCategoryEnum.AGRICULTURAL,
-          location: 'Nakuru',
-          maxRate: 8000,
-          keywords: 'tractor',
-          availableFrom: '2030-01-26',
-          availableTo: '2030-01-27',
-        },
-        current,
-      ),
-    ).toEqual({
-      ...EMPTY_QUERY,
-      category: 'AGRICULTURAL',
-      location: 'Nakuru',
-      maxRate: 8000,
-      q: 'tractor',
-      from: '2030-01-26',
-      to: '2030-01-27',
-      sort: 'dailyRateKes,asc',
-      size: 24,
-    });
-    expect(fromCriteria(undefined, current)).toEqual({
-      ...EMPTY_QUERY,
-      sort: 'dailyRateKes,asc',
-      size: 24,
     });
   });
 

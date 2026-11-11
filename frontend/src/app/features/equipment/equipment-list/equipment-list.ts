@@ -14,13 +14,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
-import {
-  AIService,
-  AiSearchResponseInterpretedByEnum,
-  EquipmentService,
-  PageResponseEquipmentResponse,
-} from '../../../api';
+import { AIService, EquipmentService, PageResponseEquipmentResponse } from '../../../api';
 import { errorMessage } from '../../../core/api-errors';
+import { AssistantPanel } from '../../assistant/assistant-panel';
 import { addDays, fromIsoDay, startOfToday, toIsoDay } from '../../../core/dates';
 import {
   CATEGORIES,
@@ -37,7 +33,6 @@ import {
   SORT_OPTIONS,
   SortOption,
   filterChips,
-  fromCriteria,
   parseQuery,
   toParams,
   withoutFilter,
@@ -51,16 +46,10 @@ interface Results {
   error?: string;
 }
 
-/** What the last AI search did, shown above the results until the user changes the filters. */
-interface AiOutcome {
-  query: string;
-  interpretedBy: AiSearchResponseInterpretedByEnum | undefined;
-  notice: string | null;
-}
-
 @Component({
   selector: 'app-equipment-list',
   imports: [
+    AssistantPanel,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
@@ -118,14 +107,9 @@ export class EquipmentList {
       map((status) => status.enabled === true),
       catchError(() => of(false)),
     ),
-    { initialValue: true },
+    // Off until the API says it's on, so the panel doesn't flash for nothing.
+    { initialValue: false },
   );
-  protected readonly aiSearching = signal(false);
-  protected readonly aiOutcome = signal<AiOutcome | null>(null);
-  protected readonly aiError = signal<string | null>(null);
-  protected readonly aiForm = this.fb.group({
-    text: ['', Validators.maxLength(500)],
-  });
 
   protected readonly showFilters = signal(
     globalThis.matchMedia?.('(min-width: 960px)').matches ?? true,
@@ -171,7 +155,6 @@ export class EquipmentList {
     if (minRate !== null && maxRate !== null && minRate > maxRate) {
       [minRate, maxRate] = [maxRate, minRate];
     }
-    this.aiOutcome.set(null);
     this.go({
       ...this.query(),
       category: v.category || null,
@@ -195,7 +178,6 @@ export class EquipmentList {
   }
 
   protected clearFilters(): void {
-    this.aiOutcome.set(null);
     this.go(withoutFilters(this.query()));
   }
 
@@ -206,37 +188,6 @@ export class EquipmentList {
 
   protected retry(): void {
     this.reload.update((n) => n + 1);
-  }
-
-  /**
-   * Sends the sentence to the AI search. The filters it works out go into the URL like any other
-   * filters, so they show as chips and in the filter form, where the user can change them.
-   */
-  protected searchWithAi(): void {
-    const text = this.aiForm.controls.text.value.trim();
-    if (!text || this.aiSearching()) {
-      return;
-    }
-    this.aiSearching.set(true);
-    this.aiError.set(null);
-    const current = this.query();
-    this.aiApi.searchEquipmentWithAi({ query: text }, 0, current.size, current.sort).subscribe({
-      next: (response) => {
-        this.aiSearching.set(false);
-        this.aiOutcome.set({
-          query: response.query ?? text,
-          interpretedBy: response.interpretedBy,
-          notice: response.notice ?? null,
-        });
-        this.go(fromCriteria(response.filters, current));
-      },
-      error: (err: unknown) => {
-        this.aiSearching.set(false);
-        this.aiError.set(
-          errorMessage(err, 'The search did not work. Try again, or use the filters below.'),
-        );
-      },
-    });
   }
 
   private go(query: EquipmentQuery): void {
