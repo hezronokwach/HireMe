@@ -1,0 +1,60 @@
+# Render Blueprint: the API and its PostgreSQL database. In Render: New → Blueprint, pick this repo.
+# Values marked "sync: false" are asked for when the Blueprint is first applied and never stored here.
+# See the README's "Deployment" section.
+
+databases:
+  - name: hireme-db
+    databaseName: equipment_hiring
+    user: hireme
+    plan: free # free databases expire after a while; use a paid plan for real data
+    region: frankfurt
+
+services:
+  - type: web
+    name: hireme-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free # sleeps when idle; the first request after that takes about a minute
+    region: frankfurt
+    branch: main
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: docker
+      - key: PORT # the port the app listens on (Dockerfile EXPOSE)
+        value: "8080"
+      - key: DB_HOST
+        fromDatabase:
+          name: hireme-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: hireme-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: hireme-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: hireme-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: hireme-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      # The Vercel app's origin, e.g. https://hireme.vercel.app (no trailing slash), for CORS.
+      - key: FRONTEND_URL
+        sync: false
+      # "true" turns on the AI features; then GROQ_API_KEY is needed too.
+      - key: HIREME_AI_ENABLED
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SPRING_JPA_SHOW_SQL
+        value: "false"
+      - key: JAVA_TOOL_OPTIONS # keep the JVM inside a small instance's memory
+        value: -XX:MaxRAMPercentage=75

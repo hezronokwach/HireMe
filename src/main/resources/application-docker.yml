@@ -1,6 +1,8 @@
 spring:
   datasource:
-    url: ${DATABASE_URL}
+    # Either a full JDBC URL (docker-compose sets DATABASE_URL), or its parts, as hosts like Render give
+    # them (DB_HOST, DB_PORT, DB_NAME): Render's own connection string is not in JDBC form.
+    url: ${DATABASE_URL:jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
   jpa:
