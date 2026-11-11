@@ -1,13 +1,6 @@
-# Render Blueprint: the API and its PostgreSQL database. In Render: New → Blueprint, pick this repo.
-# Values marked "sync: false" are asked for when the Blueprint is first applied and never stored here.
-# See the README's "Deployment" section.
-
-databases:
-  - name: hireme-db
-    databaseName: equipment_hiring
-    user: hireme
-    plan: free # free databases expire after a while; use a paid plan for real data
-    region: frankfurt
+# Render Blueprint for the API. The database is on Neon, not Render.
+# In Render: New → Blueprint, pick this repo. Values marked "sync: false" are asked for when the
+# Blueprint is first applied and are never stored here. Full steps: DEPLOYMENT.md.
 
 services:
   - type: web
@@ -16,7 +9,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: free # sleeps when idle; the first request after that takes about a minute
-    region: frankfurt
+    region: frankfurt # next to Neon's aws-eu-central-1 (Frankfurt)
     branch: main
     healthCheckPath: /actuator/health
     envVars:
@@ -24,26 +17,14 @@ services:
         value: docker
       - key: PORT # the port the app listens on (Dockerfile EXPOSE)
         value: "8080"
-      - key: DB_HOST
-        fromDatabase:
-          name: hireme-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: hireme-db
-          property: port
-      - key: DB_NAME
-        fromDatabase:
-          name: hireme-db
-          property: database
+      # Neon, in JDBC form, with the direct (not -pooler) host:
+      # jdbc:postgresql://ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require
+      - key: DATABASE_URL
+        sync: false
       - key: DB_USER
-        fromDatabase:
-          name: hireme-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: hireme-db
-          property: password
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       # The Vercel app's origin, e.g. https://hireme.vercel.app (no trailing slash), for CORS.
@@ -56,5 +37,8 @@ services:
         sync: false
       - key: SPRING_JPA_SHOW_SQL
         value: "false"
+      # A few connections are plenty for one instance and stay well inside Neon's free limits.
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: "5"
       - key: JAVA_TOOL_OPTIONS # keep the JVM inside a small instance's memory
         value: -XX:MaxRAMPercentage=75
