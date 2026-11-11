@@ -12,6 +12,8 @@ export interface Message {
   role: MessageRoleEnum;
   text: string;
   listingIds?: Array<number>;
+  from?: string;
+  to?: string;
 }
 export enum MessageRoleEnum {
   USER = 'USER',

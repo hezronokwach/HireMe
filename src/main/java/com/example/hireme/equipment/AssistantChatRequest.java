@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -27,7 +28,14 @@ public record AssistantChatRequest(
             String text,
             // For assistant messages: the listings it showed, so "the second one" still makes sense later.
             @Size(max = 10, message = "At most 10 listings per message")
-            List<Long> listingIds
+            List<Long> listingIds,
+            // For assistant messages: the days it was talking about, so follow-ups keep them.
+            LocalDate from,
+            LocalDate to
     ) {
+
+        public Message(Role role, String text, List<Long> listingIds) {
+            this(role, text, listingIds, null, null);
+        }
     }
 }

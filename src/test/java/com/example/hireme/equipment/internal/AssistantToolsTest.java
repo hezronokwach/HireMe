@@ -94,39 +94,45 @@ class AssistantToolsTest {
     }
 
     @Test
-    void checkDates_pricesBothDays_andChecksBookings() {
-        when(equipmentService.getById(1L)).thenReturn(TRACTOR);
-        when(bookingChecker.findBookedEquipmentIds(LocalDate.of(2030, 1, 19), LocalDate.of(2030, 1, 21))).thenReturn(Set.of());
+    void search_withDays_givesThePriceForThoseDays_soNoSeparateCheckIsNeeded() {
+        when(equipmentService.search(any(), any())).thenReturn(page(TRACTOR));
 
-        DatesResult result = tools.checkDates(1L, "2030-01-19", "2030-01-21");
+        SearchResult result = tools.searchListings("AGRICULTURAL", null, null, null, null, "2030-01-19", "2030-01-21");
 
-        assertEquals(3, result.days());
-        assertEquals(0, BigDecimal.valueOf(18000).compareTo(result.totalKes()));
-        assertTrue(result.free());
-        assertSame(TRACTOR, tools.seen().get(1L));
+        assertEquals(0, BigDecimal.valueOf(18000).compareTo(result.listings().getFirst().totalKes()));
+        verify(bookingChecker).findBookedEquipmentIds(LocalDate.of(2030, 1, 19), LocalDate.of(2030, 1, 21));
     }
 
     @Test
-    void checkDates_bookedOrUnderMaintenance_isNotFree() {
+    void checkDates_pricesSeveralListingsAtOnce_bothDaysCounted() {
         EquipmentResponse paused = listing(3, "Paused", Category.AGRICULTURAL, 1000, EquipmentStatus.UNDER_MAINTENANCE);
         when(equipmentService.getById(1L)).thenReturn(TRACTOR);
+        when(equipmentService.getById(2L)).thenReturn(PLOUGH);
         when(equipmentService.getById(3L)).thenReturn(paused);
-        when(bookingChecker.findBookedEquipmentIds(any(), any())).thenReturn(Set.of(1L));
+        when(bookingChecker.findBookedEquipmentIds(any(), any())).thenReturn(Set.of(2L));
 
-        assertFalse(tools.checkDates(1L, "2030-01-20", "2030-01-20").free());
-        DatesResult maintenance = tools.checkDates(3L, "2030-01-20", "2030-01-20");
-        assertFalse(maintenance.free());
-        assertFalse(maintenance.takingBookings());
+        DatesResult result = tools.checkDates(List.of(1L, 2L, 3L, 1L), "2030-01-19", "2030-01-21");
+
+        assertEquals(3, result.days());
+        assertEquals(3, result.listings().size(), "duplicates are checked once");
+        AssistantTools.DatePrice tractor = result.listings().get(0);
+        assertEquals(0, BigDecimal.valueOf(18000).compareTo(tractor.totalKes()));
+        assertTrue(tractor.free());
+        assertFalse(result.listings().get(1).free(), "booked then");
+        assertFalse(result.listings().get(2).free());
+        assertEquals("Not taking bookings right now.", result.listings().get(2).note());
+        assertEquals(Set.of(1L, 2L, 3L), tools.seen().keySet());
     }
 
     @Test
     void checkDates_explainsBadInput_insteadOfFailing() {
         when(equipmentService.getById(99L)).thenThrow(new EquipmentNotFoundException());
 
-        assertTrue(tools.checkDates(1L, "2030-01-10", "2030-01-12").note().contains("past"));
-        assertTrue(tools.checkDates(1L, "soon", null).note().contains("YYYY-MM-DD"));
-        assertTrue(tools.checkDates(1L, "2030-01-16", "2031-06-01").note().contains("more than a year"));
-        assertTrue(tools.checkDates(99L, "2030-01-16", "2030-01-16").note().contains("no listing 99"));
+        assertTrue(tools.checkDates(List.of(1L), "2030-01-10", "2030-01-12").note().contains("past"));
+        assertTrue(tools.checkDates(List.of(1L), "soon", null).note().contains("YYYY-MM-DD"));
+        assertTrue(tools.checkDates(List.of(1L), "2030-01-16", "2031-06-01").note().contains("more than a year"));
+        assertTrue(tools.checkDates(List.of(99L), "2030-01-16", "2030-01-16").listings().getFirst().note()
+                .contains("no listing 99"));
         assertTrue(tools.seen().isEmpty());
     }
 

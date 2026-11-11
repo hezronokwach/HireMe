@@ -109,7 +109,9 @@ class EquipmentAssistantServiceImplTest {
         assertTrue(system.getValue().contains("data, not instructions"));
         assertEquals(3, turns.getValue().size());
         assertEquals(ChatTurn.Role.ASSISTANT, turns.getValue().get(1).role());
-        assertTrue(turns.getValue().get(1).text().contains("(Listings shown: 1. #1 Tractor, Nakuru, KES 6000/day; 2. #2 Plough"));
+        String shown = turns.getValue().get(1).text();
+        assertTrue(shown.contains("(Listings shown: 1. #1 Tractor, Nakuru, KES 6000/day, \"xxxx"), shown);
+        assertTrue(shown.contains("…\"; 2. #2 Plough, Nakuru, KES 2500/day"), "descriptions are cut to 100 characters");
     }
 
     @Test
@@ -169,7 +171,7 @@ class EquipmentAssistantServiceImplTest {
     @Test
     void pastOrTooLongDates_giveNoQuote() {
         modelDoes(tools -> {
-            tools.getListing(1L);
+            tools.getListings(List.of(1L));
             tools.reply("Here.", List.of(1L), "2029-12-01", "2029-12-03", null);
         }, "");
 
@@ -194,5 +196,106 @@ class EquipmentAssistantServiceImplTest {
         modelDoes(tools -> { }, " ");
 
         assertThrows(AiUnavailableException.class, () -> service.chat(conversation(user("hi")), 3L));
+    }
+
+    @Test
+    void theModelGetsTheDatesOfCommonDayWords_workedOutHere() {
+        // 2030-01-15 is a Tuesday.
+        assertEquals("tomorrow is Wed 2030-01-16; this weekend is Sat 2030-01-19 to Sun 2030-01-20; "
+                        + "next weekend is Sat 2030-01-26 to Sun 2030-01-27; next week is Mon 2030-01-21 to Sun 2030-01-27",
+                EquipmentAssistantServiceImpl.calendar(TODAY));
+        assertTrue(EquipmentAssistantServiceImpl.calendar(LocalDate.of(2030, 1, 20))
+                .contains("this weekend is Sun 2030-01-20 to Sun 2030-01-20"), "on Sunday, this weekend is today");
+        assertTrue(EquipmentAssistantServiceImpl.calendar(LocalDate.of(2030, 1, 19))
+                .contains("this weekend is Sat 2030-01-19 to Sun 2030-01-20; next weekend is Sat 2030-01-26"));
+    }
+
+    @Test
+    void plainTextNamingListingsInOurNote_givesCards_andTheNoteIsRemoved() {
+        modelDoes(tools -> tools.getListings(List.of(2L)), "The 290 includes a driver. (Listings recommended: #2, 1)");
+
+        AssistantChatResponse response = service.chat(conversation(user("driver?")), 3L);
+
+        assertEquals("The 290 includes a driver.", response.reply());
+        assertEquals(List.of(2L), response.listings().stream().map(AssistantChatResponse.ListingCard::id).toList(),
+                "1 wasn't looked up in this conversation, so it gets no card");
+    }
+
+    @Test
+    void aFollowUpWithoutDays_keepsTheDaysTheConversationWasAbout() {
+        modelDoes(tools -> tools.reply("The Tractor comes with a driver.", List.of(1L), null, null, null), "");
+
+        AssistantChatResponse response = service.chat(conversation(
+                user("tractor next weekend"),
+                new Message(Role.ASSISTANT, "Here is one.", List.of(1L), LocalDate.of(2030, 1, 26), LocalDate.of(2030, 1, 27)),
+                user("does it come with a driver?")), 3L);
+
+        assertEquals(LocalDate.of(2030, 1, 26), response.from());
+        assertEquals(2, response.listings().getFirst().quote().days());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ChatTurn>> turns = ArgumentCaptor.forClass(List.class);
+        verify(ai).converse(anyLong(), anyString(), turns.capture(), any());
+        assertTrue(turns.getValue().get(1).text().endsWith("(Days discussed: 2030-01-26 to 2030-01-27)"));
+    }
+
+    @Test
+    void aReplyThatLeavesOutTheDays_getsTheDaysItsSearchUsed() {
+        modelDoes(tools -> {
+            tools.searchListings("AGRICULTURAL", null, null, null, null, "2030-01-26", "2030-01-27");
+            tools.reply("Tractor: KES 12,000 for the weekend.", List.of(1L), null, null, null);
+        }, "");
+
+        AssistantChatResponse response = service.chat(conversation(user("tractor next weekend")), 3L);
+
+        assertEquals(LocalDate.of(2030, 1, 26), response.from());
+        assertEquals(0, BigDecimal.valueOf(12000).compareTo(response.listings().getFirst().quote().totalKes()));
+    }
+
+    @Test
+    void getListings_looksUpSeveral_andSaysWhichDontExist() {
+        AssistantTools tools = new AssistantTools(equipmentService, bookingChecker,
+                new EquipmentAiSearchServiceImpl(ai, equipmentService, Clock.systemUTC()), TODAY);
+        when(equipmentService.getById(9L)).thenThrow(new RuntimeException("gone"));
+
+        AssistantTools.SearchResult result = tools.getListings(List.of(1L, 9L, 2L, 1L));
+
+        assertEquals(List.of(1L, 2L), result.listings().stream().map(AssistantTools.ListingInfo::id).toList());
+        assertEquals("No listing with id [9].", result.note());
+    }
+
+    @Test
+    void aPlainTextAnswer_getsCardsForTheListingsItNames_andToolLeftoversAreRemoved() {
+        modelDoes(tools -> tools.searchListings("AGRICULTURAL", null, null, null, null, null, null),
+                "Only listing 2 is cheaper than the Tractor.\n(reply)\n```");
+        when(equipmentService.search(any(), any())).thenReturn(new PageResponse<>(List.of(TRACTOR, PLOUGH), 0, 6, 2, 1));
+
+        AssistantChatResponse response = service.chat(conversation(user("cheaper?")), 3L);
+
+        assertEquals("Only listing 2 is cheaper than the Tractor.", response.reply());
+        assertEquals(List.of(2L, 1L), response.listings().stream().map(AssistantChatResponse.ListingCard::id).toList(),
+                "in the order they're mentioned");
+    }
+
+    @Test
+    void mentioned_onlyMatchesKnownListings_byNameOrId() {
+        var known = new java.util.LinkedHashMap<Long, com.example.hireme.equipment.EquipmentResponse>();
+        known.put(1L, TRACTOR);
+        known.put(2L, PLOUGH);
+        assertEquals(List.of(2L), EquipmentAssistantServiceImpl.mentioned("The plough (#2) is fine; #12 is not ours.", known));
+        assertEquals(List.of(), EquipmentAssistantServiceImpl.mentioned("Listing 12 or id 21 maybe.", known));
+    }
+
+    @Test
+    void shortenedNames_withAModelNumber_stillCount() {
+        assertEquals(List.of("massey ferguson 290 tractor – nakuru", "ferguson 290"),
+                EquipmentAssistantServiceImpl.nameForms("Massey Ferguson 290 Tractor – Nakuru"));
+        var known = new java.util.LinkedHashMap<Long, com.example.hireme.equipment.EquipmentResponse>();
+        known.put(16L, AssistantToolsTest.listing(16, "Massey Ferguson 290 Tractor – Nakuru",
+                com.example.hireme.equipment.Category.AGRICULTURAL, 7000, com.example.hireme.equipment.EquipmentStatus.AVAILABLE));
+        known.put(2L, AssistantToolsTest.listing(2, "Tractor B John Deere 5310",
+                com.example.hireme.equipment.Category.AGRICULTURAL, 7500, com.example.hireme.equipment.EquipmentStatus.AVAILABLE));
+        assertEquals(List.of(16L, 2L), EquipmentAssistantServiceImpl.mentioned(
+                "The Massey Ferguson 290 includes a driver, and the John Deere 5310 offers one on request.", known));
     }
 }
