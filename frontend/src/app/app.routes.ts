@@ -9,6 +9,22 @@ export const routes: Routes = [
     title: 'HireMe',
   },
   {
+    path: 'equipment',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/equipment/equipment-list/equipment-list').then((m) => m.EquipmentList),
+    title: 'Find equipment · HireMe',
+  },
+  {
+    path: 'equipment/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/equipment/equipment-detail/equipment-detail').then(
+        (m) => m.EquipmentDetail,
+      ),
+    title: 'Equipment · HireMe',
+  },
+  {
     path: 'login',
     canActivate: [guestGuard],
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),

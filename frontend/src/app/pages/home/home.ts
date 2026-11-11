@@ -1,11 +1,13 @@
 import { Component, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 
-/** The signed-in landing page. Browsing, listings and bookings arrive with #15–#17. */
+/** The signed-in landing page. Listings and bookings arrive with #16 and #17. */
 @Component({
   selector: 'app-home',
-  imports: [MatCardModule],
+  imports: [MatCardModule, MatButtonModule, RouterLink],
   template: `
     @if (auth.currentSession(); as session) {
       <mat-card class="welcome" appearance="outlined">
@@ -26,6 +28,9 @@ import { AuthService } from '../../core/auth/auth.service';
             }
           }
         </mat-card-content>
+        <mat-card-actions>
+          <a mat-flat-button routerLink="/equipment">Find equipment</a>
+        </mat-card-actions>
       </mat-card>
     }
   `,
