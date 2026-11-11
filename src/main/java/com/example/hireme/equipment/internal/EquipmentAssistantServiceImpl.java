@@ -164,7 +164,7 @@ public class EquipmentAssistantServiceImpl implements EquipmentAssistantService 
      */
     static String calendar(LocalDate today) {
         LocalDate saturday = today.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SATURDAY));
-        if (today.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+        if (java.time.DayOfWeek.SUNDAY.equals(today.getDayOfWeek())) {
             saturday = today.minusDays(1); // on Sunday, "this weekend" is today
         }
         LocalDate thisWeekendStart = today.isAfter(saturday) ? today : saturday;
@@ -265,7 +265,7 @@ public class EquipmentAssistantServiceImpl implements EquipmentAssistantService 
         List<String> forms = new ArrayList<>(List.of(lower));
         String[] words = lower.replaceAll("[^\\p{L}\\p{N} ]", " ").trim().split("\\s+");
         for (int i = 1; i < words.length; i++) {
-            if (words[i].matches(".*\\d.*") && words[i - 1].length() > 2) {
+            if (words[i].chars().anyMatch(Character::isDigit) && words[i - 1].length() > 2) {
                 forms.add(words[i - 1] + " " + words[i]);
             }
         }
