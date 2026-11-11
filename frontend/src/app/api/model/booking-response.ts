@@ -17,6 +17,8 @@ export interface BookingResponse {
   totalCostKes?: number;
   status?: BookingResponseStatusEnum;
   creationDate?: string;
+  clientName?: string;
+  clientPhone?: string;
 }
 export enum BookingResponseStatusEnum {
   PENDING = 'PENDING',

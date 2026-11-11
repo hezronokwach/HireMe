@@ -2,6 +2,7 @@ package com.example.hireme.user.internal;
 
 import com.example.hireme.user.RegisterRequest;
 import com.example.hireme.user.Role;
+import com.example.hireme.user.UserContact;
 import com.example.hireme.user.UserResponse;
 import com.example.hireme.user.UserService;
 import com.example.hireme.user.internal.exception.UserAlreadyExistsException;
@@ -10,7 +11,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,5 +61,16 @@ public class UserServiceImpl implements UserService {
     public Optional<Long> getUserIdByEmail(String email) {
         return userRepository.findByEmail(email)
                 .map(User::getId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, UserContact> getContacts(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        return userRepository.findAllById(Set.copyOf(userIds)).stream()
+                .collect(Collectors.toMap(User::getId,
+                        user -> new UserContact(user.getId(), user.getFullName(), user.getPhoneNumber())));
     }
 }

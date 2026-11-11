@@ -91,6 +91,30 @@ describe('OwnerBookings', () => {
     expect(el.querySelectorAll('[data-testid="booking-3"] button').length).toBe(0);
   });
 
+  it('shows who booked, with a tap-to-call phone number when the API gives one', async () => {
+    const el = await open();
+    listRequest().flush({
+      content: [
+        { ...booking(1, 'PENDING'), clientName: 'Jane Wanjiru', clientPhone: '+254700000001' },
+        { ...booking(2, 'COMPLETED'), clientName: 'Otieno' },
+        booking(3, 'PENDING'),
+      ],
+      totalElements: 3,
+    });
+    await settle();
+
+    const first = el.querySelector('[data-testid="booking-1"] [data-testid="client"]')!;
+    expect(first.textContent).toContain('Jane Wanjiru');
+    const call = first.querySelector<HTMLAnchorElement>('a.phone')!;
+    expect(call.getAttribute('href')).toBe('tel:+254700000001');
+    expect(call.getAttribute('aria-label')).toBe('Call Jane Wanjiru on +254700000001');
+
+    const second = el.querySelector('[data-testid="booking-2"] [data-testid="client"]')!;
+    expect(second.textContent).toContain('Otieno');
+    expect(second.querySelector('a.phone')).toBeNull();
+    expect(el.querySelector('[data-testid="booking-3"] [data-testid="client"]')).toBeNull();
+  });
+
   it('filters by status through the URL', async () => {
     const el = await open('/owner-bookings?status=PENDING');
     expect(listRequest().request.params.get('status')).toBe('PENDING');
