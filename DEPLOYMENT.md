@@ -39,7 +39,7 @@ Follow the steps in order: **database → API → web app → connect them → c
 ### Check these before the app is public
 
 - [ ] **Anyone can register as an admin.** `POST /api/v1/auth/register` accepts any `role`, including `ADMIN`. That's fine for a demo, but fix it before real users arrive: only allow `CLIENT` and `OWNER` at registration, and create admins another way.
-- [ ] **No secrets in git.** `git grep gsk_` should find nothing. The JWT secret, database password and Groq key live only in Render.
+- [ ] **No secrets in git.** Searching the repo for a Groq key (they start with `gsk` and an underscore) should find nothing. The JWT secret, database password and Groq key live only in Render.
 - [ ] **CI is green on the branch you deploy** (`ci-pr.yml`, `frontend.yml`).
 
 ---
