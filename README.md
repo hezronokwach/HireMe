@@ -189,6 +189,23 @@ The `ai` module is the one place that talks to a language model. It uses [Groq](
   - **Out-of-range rate:** a rate below half the cheapest or above twice the dearest comparable listing is dropped.
 
   The prompts live in `src/main/resources/prompts/` (`describe-equipment.st`, `describe-equipment-request.st`). The owner's notes are passed as information, and the model is told to ignore any instructions inside them.
+- **`POST /api/v1/equipment/ai/assistant`** (any logged-in user): **the hire assistant**, a conversation that finds, compares and prices listings. Send the whole conversation each time (`messages`: `role` `USER` or `ASSISTANT`, `text`, and for assistant messages the `listingIds` and `from`/`to` days they were about); the server keeps nothing.
+  - **Tools:** the model gets read-only tools over the real data and answers only from them:
+    - `searchListings`: the normal search, with the model's filters cleaned up as below. Keywords are kept with a category, and it falls back to the category alone when nothing mentions the keywords. With days, it returns only free listings, each with the total for those days.
+    - `getListings`: details and descriptions of listings.
+    - `checkDates`: free or not, plus the total, for several listings at once.
+    - `reply`: how the model hands back its answer.
+  - **Trust:** the response's `listings` are cards the server builds from the database, only for listings the tools returned in this conversation, with the price and availability (`quote`: days × rate, both days counted) worked out by the server. So the model can't invent a listing, price or free day. It never books anything, and user text is treated as data, not instructions.
+  - **Context:**
+    - The server puts today's dates for "tomorrow", "this weekend", "next weekend" and "next week" in the prompt, because models get day arithmetic wrong.
+    - Earlier answers are replayed with the listings they showed (with the start of each description) and their days, so "the second one" or "does it come with a driver?" work.
+    - When an answer has no days, it keeps the ones the conversation was about.
+  - **Robustness against Groq and gpt-oss quirks:**
+    - The model sometimes answers in plain text instead of calling `reply`. Then the text is used, and the listings it names get cards.
+    - Its hidden reasoning isn't sent back (Groq rejects it).
+    - A call to a tool that doesn't exist is retried once.
+    - When Groq's per-minute token limit says "try again in Xs" (up to 5 s), the server waits and retries. Beyond that the answer is `503` "The AI is busy right now". On the free tier (8,000 tokens a minute) that allows roughly one or two assistant turns a minute.
+  - **Limits:** each message counts once against the per-user AI limit. At most 20 messages per request, of which the model sees the latest 12.
 - **`POST /api/v1/equipment/ai/search`** (any logged-in user) takes a sentence, e.g. `{"query": "I need a tractor in Nakuru next weekend, under 8,000 a day"}`. The model only turns it into the filters of `GET /api/v1/equipment` (category, location, rates, keywords and the `availableFrom`/`availableTo` dates, worked out from today in Africa/Nairobi), and the normal search runs with them. It never queries the database itself. The response carries those `filters` for the UI to show as editable chips, `interpretedBy` (`AI` or `KEYWORDS`), and the page of `results`. Everything the model returns is checked:
   - **Unknown category:** dropped.
   - **Dates:** unparsable dates are dropped, past days are moved up to today, backwards ranges are swapped, and ranges over a year are dropped.
@@ -303,6 +320,7 @@ Returns `401` for a wrong email or password.
 | `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
 | `GET`    | `/equipment/{id}/availability` | Authenticated | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
 | `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed; send `"status": "UNDER_MAINTENANCE"` to stop new bookings. |
+| `POST`   | `/equipment/ai/assistant` | Authenticated | Talk with the hire assistant; returns its reply, listing cards with prices and suggested follow-ups (see [AI Features](#ai-features)). |
 | `POST`   | `/equipment/ai/search` | Authenticated | Search with a sentence; returns the interpreted filters and the results (see [AI Features](#ai-features)). |
 | `POST`   | `/equipment/ai/describe` | OWNER, ADMIN | Draft a title, description and daily rate with AI (see [AI Features](#ai-features)). Nothing is saved. |
 | `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`409`) while it has `PENDING`, `CONFIRMED` or `ACTIVE` bookings that end today or later. |
@@ -495,7 +513,12 @@ It covers accounts, finding equipment, booking it, and the owner pages.
   - **Filters in the URL** (`/equipment?category=AGRICULTURAL&location=Nakuru&sort=dailyRateKes,asc`): reloading, the back button and shared links keep the search. Values that aren't valid are ignored.
   - **Chips**: every active filter shows as a chip you can remove. A backwards price range is swapped.
   - **States**: loading (the previous results stay, dimmed), empty (with **Clear filters**) and error (with **Try again**).
-- **AI search**: type a sentence, such as "a tractor in Nakuru next weekend, under 8,000 a day". It goes to `POST /api/v1/equipment/ai/search`, and the filters the model worked out go into the URL like any others. So they show as chips and in the filter form, where you can change them. A banner says whether the AI set the filters, or shows the backend's notice when it fell back to matching your words. When `GET /api/v1/ai/status` reports AI is off, the box says it matches words instead.
+- **Ask HireMe** (the hire assistant, above the filters): a chat that uses `POST /api/v1/equipment/ai/assistant`.
+  - **Starting:** a few example questions get the user going. After each answer there are suggested follow-ups.
+  - **Cards:** answers come with listing cards that show the rate and, when days are known, the total and whether the listing is free.
+  - **Booking hand-off:** **Book these dates** opens the listing with those days already in the booking form (`/equipment/:id?from=…&to=…`).
+  - **Memory:** the conversation is kept for the browser tab (sessionStorage), so going to a listing and back keeps it. **New conversation** clears it.
+  - **When AI is off** (`GET /api/v1/ai/status`), the panel is hidden and the filters work as before.
 - **Detail** (`/equipment/:id`): description, rate and status, plus a calendar of the next 12 months with confirmed bookings marked and listed (from `GET /api/v1/equipment/{id}/availability`). **Back to results** returns to the list with its filters. Clients book from here (see below).
 - **Dates** are shown and typed day first (`15/11/2026`). Material's plain date adapter can't read that, so `core/day-first-dates.ts` parses it, and ISO dates too.
 

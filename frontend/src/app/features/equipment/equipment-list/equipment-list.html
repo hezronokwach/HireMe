@@ -1,54 +1,7 @@
-<section class="ai-search" aria-labelledby="ai-search-title">
-  <h1 id="ai-search-title">Find equipment</h1>
-  <form [formGroup]="aiForm" (ngSubmit)="searchWithAi()" class="ai-form">
-    <mat-form-field class="ai-field" subscriptSizing="dynamic">
-      <mat-icon matPrefix>{{ aiEnabled() ? 'auto_awesome' : 'search' }}</mat-icon>
-      <mat-label>Describe what you need</mat-label>
-      <input
-        matInput
-        formControlName="text"
-        maxlength="500"
-        placeholder="A tractor in Nakuru next weekend, under 8,000 a day"
-        data-testid="ai-query"
-      />
-      <mat-hint>
-        @if (aiEnabled()) {
-          AI turns your sentence into filters you can change.
-        } @else {
-          Matches your words against the listings.
-        }
-      </mat-hint>
-    </mat-form-field>
-    <button
-      mat-flat-button
-      type="submit"
-      [disabled]="aiSearching() || !aiForm.controls.text.value.trim()"
-    >
-      {{ aiSearching() ? 'Searching…' : 'Search' }}
-    </button>
-  </form>
-  @if (aiSearching()) {
-    <mat-progress-bar mode="indeterminate" aria-label="Working out your search" />
-  }
-  @if (aiError()) {
-    <p class="banner error" role="alert">{{ aiError() }}</p>
-  }
-  @if (aiOutcome(); as outcome) {
-    <p class="banner" [class.warning]="outcome.notice" role="status" data-testid="ai-outcome">
-      @if (outcome.interpretedBy === 'AI') {
-        <mat-icon aria-hidden="true">auto_awesome</mat-icon>
-        <span>
-          Filters for “{{ outcome.query }}”. Remove a chip or change the filters to adjust them.
-        </span>
-      } @else {
-        <mat-icon aria-hidden="true">info</mat-icon>
-        <span>
-          {{ outcome.notice ?? 'Matched your words against the listings.' }}
-        </span>
-      }
-    </p>
-  }
-</section>
+<h1>Find equipment</h1>
+@if (aiEnabled()) {
+  <app-assistant-panel class="assistant" />
+}
 
 <div class="toolbar">
   <button

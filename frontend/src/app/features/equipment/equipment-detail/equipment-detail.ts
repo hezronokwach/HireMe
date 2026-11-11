@@ -57,6 +57,9 @@ export class EquipmentDetail {
 
   /** Route parameter. */
   readonly id = input.required<string>();
+  /** Optional days to start the booking form with (`?from=2026-11-19&to=2026-11-21`, e.g. from the assistant). */
+  readonly from = input<string>();
+  readonly to = input<string>();
 
   protected readonly categoryLabel = categoryLabel;
   protected readonly categoryIcon = categoryIcon;

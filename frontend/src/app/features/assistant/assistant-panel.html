@@ -1,0 +1,151 @@
+<section class="panel" aria-labelledby="assistant-title">
+  <header class="head">
+    <h2 id="assistant-title">
+      <mat-icon aria-hidden="true">auto_awesome</mat-icon>
+      Ask HireMe
+    </h2>
+    @if (chat.entries().length) {
+      <button mat-button type="button" (click)="chat.reset()">
+        <mat-icon>restart_alt</mat-icon>
+        New conversation
+      </button>
+    }
+  </header>
+
+  <div
+    class="log"
+    #log
+    role="log"
+    aria-live="polite"
+    aria-label="Conversation with the hire assistant"
+  >
+    @if (!chat.entries().length) {
+      <div class="bubble assistant intro">
+        <p>
+          Tell me what you need, where and when. I'll find matching equipment, compare the options,
+          check if they're free on your days and work out the price.
+        </p>
+      </div>
+      <div class="suggestions">
+        @for (starter of starters; track starter) {
+          <button mat-stroked-button type="button" (click)="send(starter)">{{ starter }}</button>
+        }
+      </div>
+    }
+
+    @for (entry of chat.entries(); track $index; let i = $index) {
+      @if (entry.role === 'USER') {
+        <div class="bubble user" data-testid="user-message">{{ entry.text }}</div>
+      } @else {
+        <div class="bubble assistant" data-testid="assistant-message">{{ entry.text }}</div>
+        @if (entry.listings?.length) {
+          <ul class="cards">
+            @for (card of entry.listings; track card.id) {
+              <li class="card" [attr.data-testid]="'card-' + card.id">
+                <div class="card-head">
+                  <mat-icon aria-hidden="true">{{ categoryIcon(card.category) }}</mat-icon>
+                  <a
+                    class="name"
+                    [routerLink]="['/equipment', card.id]"
+                    [queryParams]="datesFor(card)"
+                  >
+                    {{ card.name }}
+                  </a>
+                </div>
+                <p class="meta">
+                  {{ card.location }} · <strong>{{ formatKes(card.dailyRateKes) }}</strong> / day
+                </p>
+                @if (card.quote; as q) {
+                  <p class="quote" [class.busy]="!q.free" data-testid="card-quote">
+                    {{ formatRange(q.from!, q.to!) }} · {{ q.days }}
+                    {{ q.days === 1 ? 'day' : 'days' }} ·
+                    <strong>{{ formatKes(q.totalKes) }}</strong> ·
+                    {{
+                      q.free
+                        ? 'Free'
+                        : card.takingBookings
+                          ? 'Already booked then'
+                          : 'Not taking bookings'
+                    }}
+                  </p>
+                } @else if (!card.takingBookings) {
+                  <p class="quote busy">Not taking bookings right now</p>
+                }
+                <div class="card-actions">
+                  @if (isClient() && card.quote?.free) {
+                    <a
+                      mat-flat-button
+                      [routerLink]="['/equipment', card.id]"
+                      [queryParams]="datesFor(card)"
+                      data-testid="book-these-dates"
+                    >
+                      Book these dates
+                    </a>
+                  } @else {
+                    <a
+                      mat-stroked-button
+                      [routerLink]="['/equipment', card.id]"
+                      [queryParams]="datesFor(card)"
+                    >
+                      View
+                    </a>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+        @if (i === lastIndex() && entry.suggestions?.length && !chat.sending()) {
+          <div class="suggestions">
+            @for (suggestion of entry.suggestions; track suggestion) {
+              <button mat-stroked-button type="button" (click)="send(suggestion)">
+                {{ suggestion }}
+              </button>
+            }
+          </div>
+        }
+      }
+    }
+
+    @if (chat.sending()) {
+      <div class="bubble assistant thinking" aria-label="The assistant is thinking">
+        <span></span><span></span><span></span>
+      </div>
+    }
+    @if (chat.error()) {
+      <div class="error" role="alert">
+        <span>{{ chat.error() }}</span>
+        @if (chat.canRetry()) {
+          <button mat-button type="button" (click)="chat.retry()">Try again</button>
+        }
+      </div>
+    }
+  </div>
+
+  <form class="composer" (submit)="$event.preventDefault(); send()">
+    <textarea
+      #input
+      rows="1"
+      [value]="draft()"
+      (input)="onInput($event)"
+      (keydown)="onKeydown($event)"
+      [attr.maxlength]="maxLength"
+      placeholder="Ask about equipment, dates or prices…"
+      aria-label="Message to the hire assistant"
+      data-testid="assistant-input"
+    ></textarea>
+    <button
+      mat-flat-button
+      type="submit"
+      [disabled]="chat.sending() || !draft().trim()"
+      aria-label="Send"
+      data-testid="assistant-send"
+    >
+      <mat-icon>send</mat-icon>
+    </button>
+  </form>
+  <p class="fine-print">
+    Answers come from the listings on HireMe; prices and free days are checked for you. The
+    assistant can't book; use "Book these dates".
+  </p>
+</section>

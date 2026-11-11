@@ -26,6 +26,7 @@ public class EquipmentAiController {
 
     private final EquipmentDescriptionService descriptionService;
     private final EquipmentAiSearchService aiSearchService;
+    private final EquipmentAssistantService assistantService;
     private final UserService userService;
 
     @PostMapping("/describe")
@@ -62,6 +63,23 @@ public class EquipmentAiController {
     ) {
         var pageable = PageRequests.of(page, size, sort, EquipmentController.SORTABLE_FIELDS, EquipmentController.DEFAULT_SORT, "id");
         return ResponseEntity.ok(aiSearchService.search(request, pageable, getUserId(userDetails)));
+    }
+
+    @PostMapping("/assistant")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(operationId = "chatWithAssistant", summary = "Talk with the hire assistant",
+            description = "A conversation that finds, compares and prices listings. Send the whole conversation so far "
+                    + "(the server keeps nothing); the last message is the user's. The assistant reads the real listings "
+                    + "through read-only tools. `listings` are cards built from the database, only for listings it looked "
+                    + "up, with the price and availability for the days being discussed. It never books anything.")
+    @ApiResponse(responseCode = "200", description = "The assistant's reply, listing cards and suggested follow-ups")
+    @ApiResponse(responseCode = "429", description = "Too many AI requests from this user in the last minute")
+    @ApiResponse(responseCode = "503", description = "AI is turned off or Groq is unavailable")
+    public ResponseEntity<AssistantChatResponse> chat(
+            @Valid @RequestBody AssistantChatRequest request,
+            @AuthenticationPrincipal User userDetails
+    ) {
+        return ResponseEntity.ok(assistantService.chat(request, getUserId(userDetails)));
     }
 
     private Long getUserId(User userDetails) {
