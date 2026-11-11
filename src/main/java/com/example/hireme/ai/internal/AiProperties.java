@@ -29,6 +29,10 @@ public record AiProperties(
         int requestsPerMinute
 ) {
     public AiProperties {
+        // Pasting a key into a hosting dashboard often brings a trailing newline along, and a newline
+        // in the Authorization header makes every call fail.
+        apiKey = apiKey == null ? null : apiKey.strip();
+        model = model == null ? null : model.strip();
         if (baseUrl == null || baseUrl.isBlank()) {
             baseUrl = "https://api.groq.com/openai/v1";
         }
