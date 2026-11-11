@@ -75,10 +75,11 @@ describe('EquipmentDetail', () => {
     );
   });
 
-  it('shows clients a Book button (not wired up yet)', async () => {
+  it('shows clients the booking form, with Book disabled until dates are picked', async () => {
     const { el, harness } = await open('7');
     respond();
     await harness.fixture.whenStable();
+    expect(el.querySelector('app-booking-form')).not.toBeNull();
     expect(el.querySelector<HTMLButtonElement>('[data-testid="book"]')?.disabled).toBe(true);
     expect(el.textContent).toContain('No bookings yet');
   });
@@ -96,6 +97,7 @@ describe('EquipmentDetail', () => {
     respond('UNDER_MAINTENANCE');
     await harness.fixture.whenStable();
     expect(el.textContent).toContain("This listing isn't taking bookings right now.");
+    expect(el.querySelector('app-booking-form')).toBeNull();
   });
 
   it('shows a not-found page for a missing or malformed id', async () => {

@@ -1,6 +1,5 @@
 package com.example.hireme.booking;
 
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 
@@ -15,7 +14,8 @@ public record CreateBookingRequest(
         LocalDate startDate,
 
         @NotNull(message = "End date is required")
-        @Future(message = "End date must be in the future")
+        // Both days count, so a one-day booking for today (start = end = today) is valid.
+        @FutureOrPresent(message = "End date must be today or in the future")
         LocalDate endDate
 ) {
 }

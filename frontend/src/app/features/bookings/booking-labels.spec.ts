@@ -20,3 +20,23 @@ describe('booking labels', () => {
     expect(bookingStatusLabel('WHATEVER')).toBe('WHATEVER');
   });
 });
+
+describe('client rules and booked days', () => {
+  it('lets the client cancel only pending or confirmed bookings', async () => {
+    const { clientCanCancel } = await import('./booking-labels');
+    expect(
+      ['PENDING', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED'].filter(clientCanCancel),
+    ).toEqual(['PENDING', 'CONFIRMED']);
+  });
+
+  it('expands booked periods into days, across month ends', async () => {
+    const { bookedDaySet } = await import('./booking-labels');
+    expect([
+      ...bookedDaySet([
+        { startDate: '2030-01-30', endDate: '2030-02-01' },
+        { startDate: '2030-02-05', endDate: '2030-02-05' },
+        {},
+      ]),
+    ]).toEqual(['2030-01-30', '2030-01-31', '2030-02-01', '2030-02-05']);
+  });
+});

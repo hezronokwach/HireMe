@@ -383,7 +383,7 @@ Availability response (`EquipmentAvailabilityResponse`) for `GET /equipment/1/av
 
 | Method | Path                       | Roles          | Description                                             |
 |--------|----------------------------|----------------|---------------------------------------------------------|
-| `POST` | `/bookings`                | CLIENT, ADMIN  | Book equipment (`201`). `409` if the listing is under maintenance or the dates are already booked. |
+| `POST` | `/bookings`                | CLIENT, ADMIN  | Book equipment (`201`). Both dates must be today or later, and both days count, so `startDate = endDate = today` books today. `409` if the listing is under maintenance or the dates are already booked. |
 | `GET`  | `/bookings/my-bookings`    | CLIENT, ADMIN  | The caller's bookings, as a page. |
 | `GET`  | `/bookings/for-my-equipment` | OWNER, ADMIN | Bookings on the caller's equipment, as a page. Optional `?status=PENDING` filter. |
 
@@ -479,7 +479,7 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 
 The web app lives in [`frontend/`](frontend/). It is an Angular 22 app (standalone components, signals, no zone.js) styled with Angular Material.
 
-So far it covers accounts, finding equipment and the owner pages. Booking comes next (#17).
+It covers accounts, finding equipment, booking it, and the owner pages.
 
 ### Accounts
 
@@ -496,7 +496,17 @@ So far it covers accounts, finding equipment and the owner pages. Booking comes 
   - **Chips**: every active filter shows as a chip you can remove. A backwards price range is swapped.
   - **States**: loading (the previous results stay, dimmed), empty (with **Clear filters**) and error (with **Try again**).
 - **AI search**: type a sentence, such as "a tractor in Nakuru next weekend, under 8,000 a day". It goes to `POST /api/v1/equipment/ai/search`, and the filters the model worked out go into the URL like any others. So they show as chips and in the filter form, where you can change them. A banner says whether the AI set the filters, or shows the backend's notice when it fell back to matching your words. When `GET /api/v1/ai/status` reports AI is off, the box says it matches words instead.
-- **Detail** (`/equipment/:id`): description, rate and status, plus a calendar of the next 90 days with confirmed bookings marked and listed (from `GET /api/v1/equipment/{id}/availability`). **Back to results** returns to the list with its filters. Clients see a **Book** button, which stays disabled until the booking flow lands (#17).
+- **Detail** (`/equipment/:id`): description, rate and status, plus a calendar of the next 12 months with confirmed bookings marked and listed (from `GET /api/v1/equipment/{id}/availability`). **Back to results** returns to the list with its filters. Clients book from here (see below).
+- **Dates** are shown and typed day first (`15/11/2026`). Material's plain date adapter can't read that, so `core/day-first-dates.ts` parses it, and ISO dates too.
+
+### For clients
+
+- **Booking** (on the detail page, for listings that take bookings):
+  - **Dates:** the client picks a range. Past days and days with a confirmed or active booking can't be picked, and a typed range that runs over a booked day is refused.
+  - **Total:** shown before sending, as `days × daily rate` with both the first and last day counted, the same as the API. A single picked day is a one-day booking.
+  - **Request booking:** sends `POST /api/v1/bookings` and opens **My bookings**. When the API refuses (for example `409` "Equipment is already booked for some of these dates" when the days were taken after the page loaded, or a `400` date error), its message shows.
+- **My bookings** (`/my-bookings`, from `GET /api/v1/bookings/my-bookings`): newest request first, with the listing name, dates and number of days, total, request date and a status badge. **Cancel** shows only for pending or confirmed bookings, because an active one can only be cancelled by the owner. It asks first.
+- **Booking detail** (`/my-bookings/:id`): the listing (linked), where it is, rate, dates, total, booking number, and what the status means in plain words, with **Cancel booking** where allowed. Someone else's booking (`403`) is shown like a missing one.
 
 ### For owners
 
@@ -774,6 +784,7 @@ HireMe/
 │   ├── src/app/pages/        Login, register, home
 │   ├── src/app/features/equipment/  Equipment list (filters, AI search) and detail
 │   ├── src/app/features/owner/      My listings, listing form ("Write it for me"), bookings on my equipment
+│   ├── src/app/features/bookings/   Booking form, My bookings, booking detail, booking status rules
 │   ├── openapi/              Copy of the backend's OpenAPI document
 │   └── Dockerfile, nginx.conf
 ├── Dockerfile                Multi-stage build (Maven build → JRE runtime, non-root user)

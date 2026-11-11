@@ -41,22 +41,15 @@
             {{ statusLabel(item.equipmentStatus) }}
           </p>
           @if (auth.hasRole('CLIENT')) {
-            <button
-              mat-flat-button
-              type="button"
-              disabled
-              aria-describedby="book-hint"
-              data-testid="book"
-            >
-              Book
-            </button>
-            <p id="book-hint" class="hint">
-              @if (item.equipmentStatus === 'AVAILABLE') {
-                Online booking is coming soon.
-              } @else {
-                This listing isn't taking bookings right now.
-              }
-            </p>
+            @if (item.equipmentStatus === 'AVAILABLE') {
+              <app-booking-form
+                [equipment]="item"
+                [bookedPeriods]="bookedPeriods()"
+                [lastDay]="lastShownDay"
+              />
+            } @else {
+              <p class="hint">This listing isn't taking bookings right now.</p>
+            }
           }
         </mat-card>
 
@@ -67,9 +60,7 @@
 
         <section class="availability" aria-labelledby="availability-title">
           <h2 id="availability-title">Booked dates</h2>
-          <p class="hint">
-            Confirmed bookings for the next {{ availabilityDays }} days. Every other day is free.
-          </p>
+          <p class="hint">Confirmed bookings for the next 12 months. Every other day is free.</p>
           <div class="availability-body">
             <mat-calendar
               [startAt]="today"

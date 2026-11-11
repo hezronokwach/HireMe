@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard, roleGuard } from './core/auth/auth.guards';
 
 const ownerOnly = roleGuard('OWNER', 'ADMIN');
+const clientOnly = roleGuard('CLIENT', 'ADMIN');
 
 export const routes: Routes = [
   {
@@ -53,6 +54,20 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/owner/owner-bookings/owner-bookings').then((m) => m.OwnerBookings),
     title: 'Bookings on my equipment · HireMe',
+  },
+  {
+    path: 'my-bookings',
+    canActivate: [clientOnly],
+    loadComponent: () =>
+      import('./features/bookings/my-bookings/my-bookings').then((m) => m.MyBookings),
+    title: 'My bookings · HireMe',
+  },
+  {
+    path: 'my-bookings/:id',
+    canActivate: [clientOnly],
+    loadComponent: () =>
+      import('./features/bookings/booking-detail/booking-detail').then((m) => m.BookingDetail),
+    title: 'Booking · HireMe',
   },
   {
     path: 'login',

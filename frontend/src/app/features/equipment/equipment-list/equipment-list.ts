@@ -1,8 +1,8 @@
+import { provideDayFirstDates } from '../../../core/day-first-dates';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -74,9 +74,8 @@ interface AiOutcome {
     MatProgressBarModule,
     MatSelectModule,
   ],
-  // Date pickers use plain JS Dates (kept out of the initial bundle).
-  // Days written day/month/year, as in Kenya.
-  providers: [provideNativeDateAdapter(), { provide: MAT_DATE_LOCALE, useValue: 'en-GB' }],
+  // Day-first date pickers (kept out of the initial bundle).
+  providers: [provideDayFirstDates()],
   templateUrl: './equipment-list.html',
   styleUrl: './equipment-list.scss',
 })
