@@ -12,6 +12,8 @@ import com.example.hireme.shared.event.BookingCancelledEvent;
 import com.example.hireme.shared.event.BookingCompletedEvent;
 import com.example.hireme.shared.event.BookingCreatedEvent;
 import com.example.hireme.shared.web.PageResponse;
+import com.example.hireme.user.UserContact;
+import com.example.hireme.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +31,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,11 +49,14 @@ class BookingServiceImplTest {
     private BookingMapper bookingMapper;
     @Mock
     private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private BookingServiceImpl bookingService;
 
     private static final Pageable PAGE = PageRequest.of(0, 20);
+    private static final UserContact JANE = new UserContact(1L, "Jane Wanjiru", "+254700000001");
 
     private CreateBookingRequest createRequest() {
         return new CreateBookingRequest(1L, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3));
@@ -482,5 +488,96 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> bookingService.complete(1L, 1L));
+    }
+
+    // Client contact details (issue #36)
+
+    @Test
+    void getById_equipmentOwner_seesClientNameAndPhone() {
+        BookingEntity entity = createEntity(BookingStatus.PENDING);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+        when(bookingMapper.toBookingResponse(entity))
+                .thenReturn(new BookingResponse(1L, 1L, 1L, null, null, null, BookingStatus.PENDING, null));
+        when(userService.getContacts(List.of(1L))).thenReturn(Map.of(1L, JANE));
+
+        BookingResponse result = bookingService.getById(1L, 2L);
+
+        assertEquals("Jane Wanjiru", result.clientName());
+        assertEquals("+254700000001", result.clientPhone());
+    }
+
+    @Test
+    void getById_client_getsNoContactDetails() {
+        BookingEntity entity = createEntity(BookingStatus.PENDING);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+        when(bookingMapper.toBookingResponse(entity))
+                .thenReturn(new BookingResponse(1L, 1L, 1L, null, null, null, BookingStatus.PENDING, null));
+
+        BookingResponse result = bookingService.getById(1L, 1L);
+
+        assertNull(result.clientName());
+        assertNull(result.clientPhone());
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void getById_admin_seesClientContact() {
+        BookingEntity entity = createEntity(BookingStatus.CONFIRMED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+        when(userService.isAdmin(9L)).thenReturn(true);
+        when(bookingMapper.toBookingResponse(entity))
+                .thenReturn(new BookingResponse(1L, 1L, 1L, null, null, null, BookingStatus.CONFIRMED, null));
+        when(userService.getContacts(List.of(1L))).thenReturn(Map.of(1L, JANE));
+
+        BookingResponse result = bookingService.getById(1L, 9L);
+
+        assertEquals("+254700000001", result.clientPhone());
+    }
+
+    @Test
+    void getBookingsForMyEquipment_looksUpClientsOncePerPage_andHidesPhoneOnFinishedBookings() {
+        BookingEntity pending = createEntity(BookingStatus.PENDING);
+        BookingEntity completed = createEntity(BookingStatus.COMPLETED);
+        completed.setBookingId(2L);
+        BookingEntity other = createEntity(BookingStatus.CANCELLED);
+        other.setBookingId(3L);
+        other.setClientId(7L);
+        when(equipmentService.getIdsByOwner(2L)).thenReturn(List.of(1L));
+        when(bookingRepository.findByEquipmentIdIn(List.of(1L), PAGE))
+                .thenReturn(new PageImpl<>(List.of(pending, completed, other), PAGE, 3));
+        when(bookingMapper.toBookingResponse(any())).thenAnswer(call -> {
+            BookingEntity b = call.getArgument(0);
+            return new BookingResponse(b.getBookingId(), 1L, b.getClientId(), null, null, null, b.getStatus(), null);
+        });
+        when(userService.getContacts(List.of(1L, 7L)))
+                .thenReturn(Map.of(1L, JANE, 7L, new UserContact(7L, "Otieno", "+254700000007")));
+
+        List<BookingResponse> result = bookingService.getBookingsForMyEquipment(2L, null, PAGE).content();
+
+        assertEquals("Jane Wanjiru", result.get(0).clientName());
+        assertEquals("+254700000001", result.get(0).clientPhone());
+        assertEquals("Jane Wanjiru", result.get(1).clientName());
+        assertNull(result.get(1).clientPhone());
+        assertEquals("Otieno", result.get(2).clientName());
+        assertNull(result.get(2).clientPhone());
+        verify(userService, times(1)).getContacts(any());
+    }
+
+    @Test
+    void cancel_byClient_getsNoContactDetails() {
+        BookingEntity entity = createEntity(BookingStatus.PENDING);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentService.getById(1L)).thenReturn(equipmentResponse(2L));
+        when(bookingRepository.save(entity)).thenReturn(entity);
+        when(bookingMapper.toBookingResponse(entity))
+                .thenReturn(new BookingResponse(1L, 1L, 1L, null, null, null, BookingStatus.CANCELLED, null));
+
+        BookingResponse result = bookingService.cancel(1L, 1L);
+
+        assertNull(result.clientName());
+        verifyNoInteractions(userService);
     }
 }

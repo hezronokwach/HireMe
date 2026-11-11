@@ -12,6 +12,8 @@ import com.example.hireme.equipment.EquipmentResponse;
 import com.example.hireme.equipment.EquipmentService;
 import com.example.hireme.equipment.EquipmentStatus;
 import com.example.hireme.shared.web.PageResponse;
+import com.example.hireme.user.UserContact;
+import com.example.hireme.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -25,6 +27,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,11 +38,15 @@ public class BookingServiceImpl implements BookingService {
     // Bookings that hold their dates. PENDING ones don't: several clients can ask for the same dates.
     static final Set<BookingStatus> BLOCKING_STATUSES = EnumSet.of(BookingStatus.CONFIRMED, BookingStatus.ACTIVE);
     static final int MAX_AVAILABILITY_RANGE_DAYS = 366;
+    // Bookings whose client the owner may still need to call. Once a booking is over, the number is hidden.
+    static final Set<BookingStatus> CONTACT_STATUSES =
+            EnumSet.of(BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.ACTIVE);
 
     private final EquipmentService equipmentService;
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -71,10 +78,14 @@ public class BookingServiceImpl implements BookingService {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId)
                 .orElseThrow(NotFoundException::new);
         EquipmentResponse equipment = equipmentService.getById(bookingEntity.getEquipmentId());
-        if (!Objects.equals(bookingEntity.getClientId(), currentUserId) && !Objects.equals(equipment.ownerId(), currentUserId)) {
+        boolean isOwner = Objects.equals(equipment.ownerId(), currentUserId);
+        boolean isClient = Objects.equals(bookingEntity.getClientId(), currentUserId);
+        boolean isAdmin = !isOwner && !isClient && userService.isAdmin(currentUserId);
+        if (!isOwner && !isClient && !isAdmin) {
             throw new ForbiddenException();
         }
-        return bookingMapper.toBookingResponse(bookingEntity);
+        BookingResponse response = bookingMapper.toBookingResponse(bookingEntity);
+        return isOwner || isAdmin ? withClientContact(response) : response;
     }
 
     @Override
@@ -91,7 +102,11 @@ public class BookingServiceImpl implements BookingService {
         Page<BookingEntity> bookings = status == null
                 ? bookingRepository.findByEquipmentIdIn(equipmentIds, pageable)
                 : bookingRepository.findByEquipmentIdInAndStatus(equipmentIds, status, pageable);
-        return PageResponse.from(bookings, bookingMapper::toBookingResponse);
+        // One lookup for the whole page, not one per booking.
+        Map<Long, UserContact> clients = userService.getContacts(
+                bookings.getContent().stream().map(BookingEntity::getClientId).distinct().toList());
+        return PageResponse.from(bookings, booking ->
+                withClientContact(bookingMapper.toBookingResponse(booking), clients.get(booking.getClientId())));
     }
 
     @Override
@@ -134,7 +149,7 @@ public class BookingServiceImpl implements BookingService {
         bookingEntity.setStatus(BookingStatus.CONFIRMED);
         BookingEntity savedBooking = bookingRepository.save(bookingEntity);
         cancelOverlappingPendingBookings(savedBooking);
-        return bookingMapper.toBookingResponse(savedBooking);
+        return withClientContact(bookingMapper.toBookingResponse(savedBooking));
     }
 
     // Once dates are confirmed, overlapping requests can never be confirmed, so close them now.
@@ -174,7 +189,8 @@ public class BookingServiceImpl implements BookingService {
 
         eventPublisher.publishEvent(new BookingCancelledEvent(savedBooking.getBookingId(), savedBooking.getEquipmentId(), Instant.now()));
 
-        return bookingMapper.toBookingResponse(savedBooking);
+        BookingResponse response = bookingMapper.toBookingResponse(savedBooking);
+        return isOwner ? withClientContact(response) : response;
     }
 
     @Override
@@ -195,6 +211,22 @@ public class BookingServiceImpl implements BookingService {
 
         eventPublisher.publishEvent(new BookingCompletedEvent(savedBooking.getBookingId(), savedBooking.getEquipmentId(), Instant.now()));
 
-        return bookingMapper.toBookingResponse(savedBooking);
+        return withClientContact(bookingMapper.toBookingResponse(savedBooking));
+    }
+
+    // For the equipment's owner or an admin: who booked, and their phone while the booking is still going.
+    private BookingResponse withClientContact(BookingResponse response) {
+        if (response == null || response.clientId() == null) {
+            return response;
+        }
+        return withClientContact(response, userService.getContacts(List.of(response.clientId())).get(response.clientId()));
+    }
+
+    private static BookingResponse withClientContact(BookingResponse response, UserContact client) {
+        if (client == null) {
+            return response;
+        }
+        return response.withClient(client.fullName(),
+                CONTACT_STATUSES.contains(response.status()) ? client.phoneNumber() : null);
     }
 }
