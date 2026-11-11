@@ -2,6 +2,7 @@ package com.example.hireme.user.internal;
 
 import com.example.hireme.user.RegisterRequest;
 import com.example.hireme.user.Role;
+import com.example.hireme.user.UserContact;
 import com.example.hireme.user.UserResponse;
 import com.example.hireme.user.internal.exception.UserAlreadyExistsException;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -159,5 +163,25 @@ class UserServiceImplTest {
         Optional<Long> result = userService.getUserIdByEmail("john@test.com");
 
         assertFalse(result.isPresent());
+    }
+
+    @Test
+    void getContacts_looksUpAllIdsInOneQuery() {
+        User client = new User();
+        client.setId(5L);
+        client.setFullName("Jane Wanjiru");
+        client.setPhoneNumber("+254700000005");
+        when(userRepository.findAllById(Set.of(5L, 6L))).thenReturn(List.of(client));
+
+        Map<Long, UserContact> result = userService.getContacts(List.of(5L, 6L, 5L));
+
+        assertEquals(Map.of(5L, new UserContact(5L, "Jane Wanjiru", "+254700000005")), result);
+        verify(userRepository, times(1)).findAllById(any());
+    }
+
+    @Test
+    void getContacts_noIds_skipsTheQuery() {
+        assertEquals(Map.of(), userService.getContacts(List.of()));
+        verifyNoInteractions(userRepository);
     }
 }
