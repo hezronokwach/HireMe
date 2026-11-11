@@ -44,6 +44,27 @@
   }
 }
 
+.client {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  overflow-wrap: anywhere;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.phone {
+  color: var(--mat-sys-primary);
+  font-weight: 500;
+  // A comfortable tap target on phones.
+  padding: 4px 0;
+}
+
 .dates {
   display: inline-flex;
   align-items: center;

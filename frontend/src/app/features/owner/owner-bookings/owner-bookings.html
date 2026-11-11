@@ -47,6 +47,23 @@
                     ({{ bookingDays(booking.startDate!, booking.endDate!) }}
                     {{ bookingDays(booking.startDate!, booking.endDate!) === 1 ? 'day' : 'days' }})
                   </span>
+                  @if (booking.clientName) {
+                    <span class="client" data-testid="client">
+                      <mat-icon aria-hidden="true">person</mat-icon>
+                      {{ booking.clientName }}
+                      @if (booking.clientPhone) {
+                        ·
+                        <a
+                          class="phone"
+                          [href]="'tel:' + booking.clientPhone"
+                          [attr.aria-label]="
+                            'Call ' + booking.clientName + ' on ' + booking.clientPhone
+                          "
+                          >{{ booking.clientPhone }}</a
+                        >
+                      }
+                    </span>
+                  }
                   <span class="meta">
                     <strong>{{ formatKes(booking.totalCostKes) }}</strong>
                     @if (booking.creationDate) {
