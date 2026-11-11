@@ -1,0 +1,98 @@
+<a mat-button class="back" [routerLink]="backLink">
+  <mat-icon>arrow_back</mat-icon>
+  Back to results
+</a>
+
+@switch (detail().state) {
+  @case ('loading') {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading the listing" />
+  }
+  @case ('not-found') {
+    <div class="state">
+      <mat-icon aria-hidden="true">search_off</mat-icon>
+      <p>This listing doesn't exist or has been removed.</p>
+      <a mat-stroked-button routerLink="/equipment">Browse equipment</a>
+    </div>
+  }
+  @case ('error') {
+    <div class="state" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <p>{{ detail().error }}</p>
+      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+    </div>
+  }
+  @case ('ready') {
+    @if (detail().equipment; as item) {
+      <article class="detail">
+        <header>
+          <span class="category">
+            <mat-icon aria-hidden="true">{{ categoryIcon(item.category) }}</mat-icon>
+            {{ categoryLabel(item.category) }}
+          </span>
+          <h1>{{ item.name }}</h1>
+          <p class="location"><mat-icon aria-hidden="true">place</mat-icon>{{ item.location }}</p>
+        </header>
+
+        <mat-card appearance="outlined" class="booking">
+          <p class="rate">
+            <strong>{{ formatKes(item.dailyRateKes) }}</strong> / day
+          </p>
+          <p class="status" [class.unavailable]="item.equipmentStatus !== 'AVAILABLE'">
+            {{ statusLabel(item.equipmentStatus) }}
+          </p>
+          @if (auth.hasRole('CLIENT')) {
+            <button
+              mat-flat-button
+              type="button"
+              disabled
+              aria-describedby="book-hint"
+              data-testid="book"
+            >
+              Book
+            </button>
+            <p id="book-hint" class="hint">
+              @if (item.equipmentStatus === 'AVAILABLE') {
+                Online booking is coming soon.
+              } @else {
+                This listing isn't taking bookings right now.
+              }
+            </p>
+          }
+        </mat-card>
+
+        <section class="description">
+          <h2>About this equipment</h2>
+          <p>{{ item.description }}</p>
+        </section>
+
+        <section class="availability" aria-labelledby="availability-title">
+          <h2 id="availability-title">Booked dates</h2>
+          <p class="hint">
+            Confirmed bookings for the next {{ availabilityDays }} days. Every other day is free.
+          </p>
+          <div class="availability-body">
+            <mat-calendar
+              [startAt]="today"
+              [minDate]="today"
+              [maxDate]="lastShownDay"
+              [dateClass]="dateClass()"
+              aria-label="Calendar with booked days marked"
+            />
+            @if (bookedPeriods().length) {
+              <ul class="periods" data-testid="booked-periods">
+                @for (period of bookedPeriods(); track period.startDate) {
+                  <li>
+                    <span class="dot" aria-hidden="true"></span>
+                    {{ formatRange(period.startDate!, period.endDate!) }}
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="free" data-testid="no-bookings">No bookings yet: all days are free.</p>
+            }
+          </div>
+        </section>
+      </article>
+    }
+  }
+}

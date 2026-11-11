@@ -16,6 +16,15 @@
   text-decoration: none;
 }
 
+.nav {
+  margin-left: 16px;
+
+  .active {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
 .spacer {
   flex: 1;
 }
@@ -50,5 +59,19 @@
 @media (max-width: 599px) {
   .email {
     display: none;
+  }
+
+  .nav {
+    margin-left: 0;
+
+    a {
+      min-width: 0;
+      padding: 0 8px;
+      font-size: 0;
+    }
+
+    mat-icon {
+      margin: 0;
+    }
   }
 }

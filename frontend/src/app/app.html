@@ -1,5 +1,13 @@
 <mat-toolbar class="header">
   <a class="brand" routerLink="/">HireMe</a>
+  @if (auth.isLoggedIn()) {
+    <nav class="nav">
+      <a mat-button routerLink="/equipment" routerLinkActive="active">
+        <mat-icon>search</mat-icon>
+        Find equipment
+      </a>
+    </nav>
+  }
   <span class="spacer"></span>
   @if (auth.currentSession(); as session) {
     <span class="user" data-testid="current-user">

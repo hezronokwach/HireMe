@@ -478,13 +478,24 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 
 The web app lives in [`frontend/`](frontend/). It is an Angular 22 app (standalone components, signals, no zone.js) styled with Angular Material.
 
-So far it covers accounts. The listing, booking and owner pages come next (#15–#17).
+So far it covers accounts and finding equipment. The owner pages and booking come next (#16, #17).
+
+### Accounts
 
 - **Register** (`/register`): the user picks "I want to hire equipment" (`CLIENT`) or "I have equipment to rent out" (`OWNER`). The phone number must be a Kenyan mobile number (`07XXXXXXXX` or `+2547XXXXXXXX`, the same rule as the API); spaces and dashes are allowed. The user is signed in right after.
 - **Log in** (`/login`): afterwards the user goes back to the page that sent them there (`?returnUrl=`, only paths inside the app).
 - **Session**: the JWT, user id, role and email (from the token's subject) are kept in `localStorage`, so a reload stays signed in. The session ends by itself when the token expires. The header shows the user and a **Log out** button.
 - **Interceptor**: adds `Authorization: Bearer <token>` to requests for the backend only, never to other hosts. When the backend answers `401` to a signed-in request, it signs the user out and opens the login page.
 - **Guards**: `authGuard` (signed in), `guestGuard` (keeps signed-in users off login and register) and `roleGuard('OWNER', 'ADMIN')` for role-only pages.
+
+### Finding equipment
+
+- **List** (`/equipment`): cards with the name, category, location and daily rate, plus the status when a listing isn't taking bookings. The filters are keywords, category, location, a price range and the dates it must be free. You can sort (newest, price either way, name) and page through results (12, 24 or 48 per page).
+  - **Filters in the URL** (`/equipment?category=AGRICULTURAL&location=Nakuru&sort=dailyRateKes,asc`): reloading, the back button and shared links keep the search. Values that aren't valid are ignored.
+  - **Chips**: every active filter shows as a chip you can remove. A backwards price range is swapped.
+  - **States**: loading (the previous results stay, dimmed), empty (with **Clear filters**) and error (with **Try again**).
+- **AI search**: type a sentence, such as "a tractor in Nakuru next weekend, under 8,000 a day". It goes to `POST /api/v1/equipment/ai/search`, and the filters the model worked out go into the URL like any others. So they show as chips and in the filter form, where you can change them. A banner says whether the AI set the filters, or shows the backend's notice when it fell back to matching your words. When `GET /api/v1/ai/status` reports AI is off, the box says it matches words instead.
+- **Detail** (`/equipment/:id`): description, rate and status, plus a calendar of the next 90 days with confirmed bookings marked and listed (from `GET /api/v1/equipment/{id}/availability`). **Back to results** returns to the list with its filters. Clients see a **Book** button, which stays disabled until the booking flow lands (#17).
 
 ### Running it
 
@@ -740,6 +751,7 @@ HireMe/
 │   ├── src/app/api/          Generated API client (npm run api:generate)
 │   ├── src/app/core/auth/    AuthService (session), interceptor, guards
 │   ├── src/app/pages/        Login, register, home
+│   ├── src/app/features/equipment/  Equipment list (filters, AI search) and detail
 │   ├── openapi/              Copy of the backend's OpenAPI document
 │   └── Dockerfile, nginx.conf
 ├── Dockerfile                Multi-stage build (Maven build → JRE runtime, non-root user)
