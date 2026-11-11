@@ -23,4 +23,12 @@ public interface AiAssistant {
 
     // Structured answer: the model is asked for JSON matching responseType (a record), which is parsed into it.
     <T> T generate(Long userId, String systemPrompt, String userPrompt, Class<T> responseType);
+
+    /**
+     * A conversation: the model sees the earlier turns (the last one is the user's new message), may call
+     * the given tools (objects with {@code @Tool} methods) as often as it needs, and returns its final text.
+     * For a structured answer, give it a tool with {@code returnDirect = true} that records the answer.
+     * Counts as one call against the user's rate limit.
+     */
+    String converse(Long userId, String systemPrompt, java.util.List<ChatTurn> conversation, Object... tools);
 }

@@ -3,6 +3,9 @@ package com.example.hireme.ai.internal;
 import com.example.hireme.ai.AiAssistant;
 import com.example.hireme.ai.AiStatusResponse;
 import com.example.hireme.ai.AiUnavailableException;
+import com.example.hireme.ai.ChatTurn;
+
+import java.util.List;
 
 // Used when hireme.ai.enabled=false: the rest of the app works, AI calls answer 503.
 class DisabledAiAssistant implements AiAssistant {
@@ -30,6 +33,11 @@ class DisabledAiAssistant implements AiAssistant {
 
     @Override
     public <T> T generate(Long userId, String systemPrompt, String userPrompt, Class<T> responseType) {
+        throw new AiUnavailableException();
+    }
+
+    @Override
+    public String converse(Long userId, String systemPrompt, List<ChatTurn> conversation, Object... tools) {
         throw new AiUnavailableException();
     }
 }

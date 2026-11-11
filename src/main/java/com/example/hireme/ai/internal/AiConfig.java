@@ -40,6 +40,9 @@ class AiConfig {
                         .timeout(properties.timeout())
                         .maxRetries(properties.maxRetries())
                         .maxTokens(properties.maxTokens())
+                        // Groq rejects `reasoning_content` on earlier assistant messages, which Spring AI would
+                        // otherwise send back after a tool call (reasoning models like gpt-oss return it).
+                        .replayReasoningContent(false)
                         .build())
                 .build();
         log.info("AI features are on: model {} at {}", properties.model(), properties.baseUrl());
