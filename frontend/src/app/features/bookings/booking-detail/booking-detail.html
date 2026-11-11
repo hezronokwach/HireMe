@@ -1,0 +1,81 @@
+<a mat-button class="back" routerLink="/my-bookings">
+  <mat-icon>arrow_back</mat-icon>
+  My bookings
+</a>
+
+@switch (detail().state) {
+  @case ('loading') {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading the booking" />
+  }
+  @case ('not-found') {
+    <div class="state">
+      <mat-icon aria-hidden="true">search_off</mat-icon>
+      <p>This booking doesn't exist, or it isn't yours.</p>
+    </div>
+  }
+  @case ('error') {
+    <div class="state" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <p>{{ detail().error }}</p>
+      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+    </div>
+  }
+  @case ('ready') {
+    @if (detail().booking; as booking) {
+      <mat-card appearance="outlined" class="card">
+        <div class="top">
+          <h1>
+            @if (detail().equipment; as equipment) {
+              <a [routerLink]="['/equipment', equipment.id]">{{ equipment.name }}</a>
+            } @else {
+              Removed listing
+            }
+          </h1>
+          <span class="status" [attr.data-status]="booking.status" data-testid="status">
+            {{ bookingStatusLabel(booking.status) }}
+          </span>
+        </div>
+        <p class="help" data-testid="status-help">{{ clientStatusHelp(booking.status) }}</p>
+
+        <dl>
+          <dt>Dates</dt>
+          <dd>
+            {{ formatRange(booking.startDate!, booking.endDate!) }}
+            ({{ bookingDays(booking.startDate!, booking.endDate!) }}
+            {{ bookingDays(booking.startDate!, booking.endDate!) === 1 ? 'day' : 'days' }})
+          </dd>
+          @if (detail().equipment; as equipment) {
+            <dt>Where</dt>
+            <dd>{{ equipment.location }}</dd>
+            <dt>Rate</dt>
+            <dd>{{ formatKes(equipment.dailyRateKes) }} / day</dd>
+          }
+          <dt>Total</dt>
+          <dd>
+            <strong>{{ formatKes(booking.totalCostKes) }}</strong>
+          </dd>
+          @if (booking.creationDate) {
+            <dt>Requested</dt>
+            <dd>{{ formatDay(booking.creationDate.slice(0, 10)) }}</dd>
+          }
+          <dt>Booking number</dt>
+          <dd>#{{ booking.bookingId }}</dd>
+        </dl>
+
+        @if (clientCanCancel(booking.status)) {
+          <div class="actions">
+            <button
+              mat-stroked-button
+              type="button"
+              class="danger"
+              [disabled]="cancelling()"
+              (click)="cancel()"
+            >
+              {{ cancelling() ? 'Cancelling…' : 'Cancel booking' }}
+            </button>
+          </div>
+        }
+      </mat-card>
+    }
+  }
+}
