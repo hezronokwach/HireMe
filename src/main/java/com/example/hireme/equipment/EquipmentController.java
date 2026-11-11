@@ -83,6 +83,24 @@ public class EquipmentController {
         return ResponseEntity.ok(equipmentService.search(criteria, pageable));
     }
 
+    @GetMapping("/mine")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @Operation(operationId = "getMyEquipment", summary = "The caller's own listings, one page at a time (OWNER, ADMIN)",
+            description = "Every listing the caller owns, including those under maintenance.")
+    public ResponseEntity<PageResponse<EquipmentResponse>> getMine(
+            @Parameter(description = "Zero-based page number")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size, 1 to " + PageRequests.MAX_SIZE)
+            @RequestParam(defaultValue = "" + PageRequests.DEFAULT_SIZE) int size,
+            @Parameter(description = "`dailyRateKes`, `createdAt` or `name`, optionally followed by `,asc` or `,desc`. "
+                    + "Default `" + DEFAULT_SORT + "` (newest first).")
+            @RequestParam(required = false) String sort,
+            @AuthenticationPrincipal User userDetails
+    ) {
+        Pageable pageable = PageRequests.of(page, size, sort, SORTABLE_FIELDS, DEFAULT_SORT, "id");
+        return ResponseEntity.ok(equipmentService.getByOwner(getUserId(userDetails), pageable));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     @Operation(operationId = "updateEquipment", summary = "Update a listing you own (ADMIN: any)",

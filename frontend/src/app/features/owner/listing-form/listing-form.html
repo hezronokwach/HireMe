@@ -1,0 +1,198 @@
+<a mat-button class="back" routerLink="/my-listings">
+  <mat-icon>arrow_back</mat-icon>
+  My listings
+</a>
+
+@switch (loaded().state) {
+  @case ('loading') {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading the listing" />
+  }
+  @case ('not-found') {
+    <div class="state">
+      <mat-icon aria-hidden="true">search_off</mat-icon>
+      <p>This listing doesn't exist or has been removed.</p>
+    </div>
+  }
+  @case ('forbidden') {
+    <div class="state" role="alert">
+      <mat-icon aria-hidden="true">lock</mat-icon>
+      <p>You can only edit your own listings.</p>
+    </div>
+  }
+  @case ('error') {
+    <div class="state" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <p>{{ loaded().error }}</p>
+    </div>
+  }
+  @case ('ready') {
+    <h1>{{ editing() ? 'Edit listing' : 'New listing' }}</h1>
+    @if (error()) {
+      <p class="banner error" role="alert">{{ error() }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate class="form">
+      <mat-form-field>
+        <mat-label>Name</mat-label>
+        <input
+          matInput
+          formControlName="name"
+          [maxlength]="limits.name"
+          placeholder="e.g. Tractor, Massey Ferguson 385"
+        />
+        @if (form.controls.name.hasError('required')) {
+          <mat-error>Give the equipment a name</mat-error>
+        }
+        @if (serverErrors().name; as message) {
+          <mat-hint class="hint-error">{{ message }}</mat-hint>
+        }
+      </mat-form-field>
+
+      <div class="pair">
+        <mat-form-field>
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category">
+            @for (category of categories; track category.value) {
+              <mat-option [value]="category.value">{{ category.label }}</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.category.hasError('required')) {
+            <mat-error>Choose a category</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Location</mat-label>
+          <input
+            matInput
+            formControlName="location"
+            [maxlength]="limits.location"
+            placeholder="e.g. Nakuru"
+          />
+          @if (form.controls.location.hasError('required')) {
+            <mat-error>Where is it?</mat-error>
+          }
+          @if (serverErrors().location; as message) {
+            <mat-hint class="hint-error">{{ message }}</mat-hint>
+          }
+        </mat-form-field>
+      </div>
+
+      @if (aiEnabled()) {
+        <section class="ai" aria-labelledby="ai-title">
+          <h2 id="ai-title">
+            <mat-icon aria-hidden="true">auto_awesome</mat-icon>
+            Write it for me
+          </h2>
+          <p class="hint">
+            Fill in the name and category (and the location, for a rate suggestion). Add any
+            details, and the AI drafts a description you can change.
+          </p>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>Details for the AI (optional)</mat-label>
+            <input
+              matInput
+              [formControl]="notes"
+              [maxlength]="limits.notes"
+              placeholder="e.g. 2019 model, 85 hp, comes with a driver"
+            />
+          </mat-form-field>
+          <div class="ai-actions">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="writeForMe()"
+              [disabled]="!canDraft()"
+              data-testid="write-for-me"
+            >
+              {{ drafting() ? 'Writing…' : 'Write it for me' }}
+            </button>
+          </div>
+          @if (drafting()) {
+            <mat-progress-bar mode="indeterminate" aria-label="Writing a draft" />
+          }
+          @if (draftError()) {
+            <p class="banner error" role="alert">{{ draftError() }}</p>
+          }
+          @if (draft(); as d) {
+            <mat-card appearance="outlined" class="draft" data-testid="draft">
+              <p class="draft-label">Draft</p>
+              <p class="draft-title">{{ d.title }}</p>
+              <p class="draft-description">{{ d.description }}</p>
+              @if (hasRate(d)) {
+                <p class="draft-rate" data-testid="suggested-rate">
+                  Suggested rate: <strong>{{ formatKes(d.suggestedDailyRateKes) }}</strong> / day.
+                  {{ d.rateReason }}
+                </p>
+              } @else {
+                <p class="hint">
+                  No rate suggestion: there aren't enough similar listings to compare with.
+                </p>
+              }
+              <div class="draft-actions">
+                <button mat-flat-button type="button" (click)="useDraftText()">
+                  Use name and description
+                </button>
+                @if (hasRate(d)) {
+                  <button mat-stroked-button type="button" (click)="useSuggestedRate()">
+                    Use {{ formatKes(d.suggestedDailyRateKes) }}
+                  </button>
+                }
+                <button mat-button type="button" (click)="dismissDraft()">Dismiss</button>
+              </div>
+            </mat-card>
+          }
+        </section>
+      }
+
+      <mat-form-field>
+        <mat-label>Description</mat-label>
+        <textarea
+          matInput
+          formControlName="description"
+          rows="5"
+          [maxlength]="limits.description"
+          placeholder="Condition, what's included, delivery, operator…"
+        ></textarea>
+        <mat-hint align="end">
+          {{ form.controls.description.value.length }} / {{ limits.description }}
+        </mat-hint>
+        @if (serverErrors().description; as message) {
+          <mat-hint class="hint-error">{{ message }}</mat-hint>
+        }
+      </mat-form-field>
+
+      <div class="pair">
+        <mat-form-field>
+          <mat-label>Daily rate (KES)</mat-label>
+          <input matInput type="number" min="1" step="100" formControlName="dailyRateKes" />
+          @if (form.controls.dailyRateKes.hasError('required')) {
+            <mat-error>Set a daily rate</mat-error>
+          } @else if (form.controls.dailyRateKes.hasError('positive')) {
+            <mat-error>The rate must be more than zero</mat-error>
+          }
+          @if (serverErrors().dailyRateKes; as message) {
+            <mat-hint class="hint-error">{{ message }}</mat-hint>
+          }
+        </mat-form-field>
+        @if (editing()) {
+          <mat-form-field>
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              @for (status of statuses; track status[0]) {
+                <mat-option [value]="status[0]">{{ status[1] }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>Under maintenance stops new bookings.</mat-hint>
+          </mat-form-field>
+        }
+      </div>
+
+      <div class="form-actions">
+        <a mat-button routerLink="/my-listings">Cancel</a>
+        <button mat-flat-button type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : editing() ? 'Save changes' : 'Create listing' }}
+        </button>
+      </div>
+    </form>
+  }
+}

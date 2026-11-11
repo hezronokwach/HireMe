@@ -6,6 +6,16 @@
         <mat-icon>search</mat-icon>
         Find equipment
       </a>
+      @if (auth.hasRole('OWNER', 'ADMIN')) {
+        <a mat-button routerLink="/my-listings" routerLinkActive="active">
+          <mat-icon>inventory_2</mat-icon>
+          My listings
+        </a>
+        <a mat-button routerLink="/owner-bookings" routerLinkActive="active">
+          <mat-icon>event_note</mat-icon>
+          Bookings
+        </a>
+      }
     </nav>
   }
   <span class="spacer"></span>
@@ -14,7 +24,13 @@
       <span class="email">{{ session.email }}</span>
       <span class="role">{{ roleLabels[session.role] }}</span>
     </span>
-    <button mat-stroked-button type="button" (click)="auth.logout()">
+    <button
+      mat-stroked-button
+      type="button"
+      class="logout"
+      aria-label="Log out"
+      (click)="auth.logout()"
+    >
       <mat-icon>logout</mat-icon>
       Log out
     </button>

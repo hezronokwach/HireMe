@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 
-/** The signed-in landing page. Listings and bookings arrive with #16 and #17. */
+/** The signed-in landing page. */
 @Component({
   selector: 'app-home',
   imports: [MatCardModule, MatButtonModule, RouterLink],
@@ -29,7 +29,12 @@ import { AuthService } from '../../core/auth/auth.service';
           }
         </mat-card-content>
         <mat-card-actions>
-          <a mat-flat-button routerLink="/equipment">Find equipment</a>
+          @if (session.role === 'CLIENT') {
+            <a mat-flat-button routerLink="/equipment">Find equipment</a>
+          } @else {
+            <a mat-flat-button routerLink="/my-listings">My listings</a>
+            <a mat-button routerLink="/owner-bookings">Bookings on my equipment</a>
+          }
         </mat-card-actions>
       </mat-card>
     }

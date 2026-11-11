@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth/auth.guards';
+import { authGuard, guestGuard, roleGuard } from './core/auth/auth.guards';
+
+const ownerOnly = roleGuard('OWNER', 'ADMIN');
 
 export const routes: Routes = [
   {
@@ -23,6 +25,34 @@ export const routes: Routes = [
         (m) => m.EquipmentDetail,
       ),
     title: 'Equipment · HireMe',
+  },
+  {
+    path: 'my-listings',
+    canActivate: [ownerOnly],
+    loadComponent: () =>
+      import('./features/owner/my-listings/my-listings').then((m) => m.MyListings),
+    title: 'My listings · HireMe',
+  },
+  {
+    path: 'my-listings/new',
+    canActivate: [ownerOnly],
+    loadComponent: () =>
+      import('./features/owner/listing-form/listing-form').then((m) => m.ListingForm),
+    title: 'New listing · HireMe',
+  },
+  {
+    path: 'my-listings/:id/edit',
+    canActivate: [ownerOnly],
+    loadComponent: () =>
+      import('./features/owner/listing-form/listing-form').then((m) => m.ListingForm),
+    title: 'Edit listing · HireMe',
+  },
+  {
+    path: 'owner-bookings',
+    canActivate: [ownerOnly],
+    loadComponent: () =>
+      import('./features/owner/owner-bookings/owner-bookings').then((m) => m.OwnerBookings),
+    title: 'Bookings on my equipment · HireMe',
   },
   {
     path: 'login',

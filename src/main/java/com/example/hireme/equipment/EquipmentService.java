@@ -9,6 +9,8 @@ public interface EquipmentService {
     EquipmentResponse create(CreateEquipmentRequest createEquipmentRequest, Long currentUserId);
     EquipmentResponse getById(Long equipmentId);
     PageResponse<EquipmentResponse> search(EquipmentSearchCriteria criteria, Pageable pageable);
+    // The owner's own listings, whatever their status.
+    PageResponse<EquipmentResponse> getByOwner(Long ownerId, Pageable pageable);
     EquipmentResponse update(Long equipmentId, UpdateEquipmentRequest updateEquipmentRequest, Long currentUserId);
     void delete(Long equipmentId, Long currentUserId);
 

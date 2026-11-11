@@ -226,6 +226,19 @@ class EquipmentServiceImplTest {
     }
 
     @Test
+    void getByOwner_returnsTheOwnersPage() {
+        Pageable pageable = PageRequest.of(0, 20);
+        EquipmentEntity entity = createEntity(EquipmentStatus.UNDER_MAINTENANCE);
+        when(equipmentRepository.findByOwnerId(1L, pageable)).thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(null);
+
+        PageResponse<EquipmentResponse> page = equipmentService.getByOwner(1L, pageable);
+
+        assertEquals(1, page.totalElements());
+        assertEquals(1, page.content().size());
+    }
+
+    @Test
     void getIdsByOwner_returnsOwnersEquipmentIds() {
         when(equipmentRepository.findIdsByOwnerId(1L)).thenReturn(List.of(1L, 2L));
 

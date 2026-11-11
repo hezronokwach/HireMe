@@ -299,6 +299,7 @@ Returns `401` for a wrong email or password.
 |----------|-------------------|----------------|---------------------------------------------------|
 | `POST`   | `/equipment`      | OWNER, ADMIN   | Create a listing (`201`). The caller becomes the owner. |
 | `GET`    | `/equipment`      | Authenticated  | Search equipment, one page at a time (see [Paging and filters](#paging-and-filters)). |
+| `GET`    | `/equipment/mine` | OWNER, ADMIN   | The caller's own listings, any status, one page at a time (`page`, `size`, `sort` as for the search). |
 | `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
 | `GET`    | `/equipment/{id}/availability` | Authenticated | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
 | `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed; send `"status": "UNDER_MAINTENANCE"` to stop new bookings. |
@@ -478,7 +479,7 @@ curl -X PUT localhost:8080/api/v1/bookings/1/confirm -H "Authorization: Bearer $
 
 The web app lives in [`frontend/`](frontend/). It is an Angular 22 app (standalone components, signals, no zone.js) styled with Angular Material.
 
-So far it covers accounts and finding equipment. The owner pages and booking come next (#16, #17).
+So far it covers accounts, finding equipment and the owner pages. Booking comes next (#17).
 
 ### Accounts
 
@@ -496,6 +497,26 @@ So far it covers accounts and finding equipment. The owner pages and booking com
   - **States**: loading (the previous results stay, dimmed), empty (with **Clear filters**) and error (with **Try again**).
 - **AI search**: type a sentence, such as "a tractor in Nakuru next weekend, under 8,000 a day". It goes to `POST /api/v1/equipment/ai/search`, and the filters the model worked out go into the URL like any others. So they show as chips and in the filter form, where you can change them. A banner says whether the AI set the filters, or shows the backend's notice when it fell back to matching your words. When `GET /api/v1/ai/status` reports AI is off, the box says it matches words instead.
 - **Detail** (`/equipment/:id`): description, rate and status, plus a calendar of the next 90 days with confirmed bookings marked and listed (from `GET /api/v1/equipment/{id}/availability`). **Back to results** returns to the list with its filters. Clients see a **Book** button, which stays disabled until the booking flow lands (#17).
+
+### For owners
+
+These pages are open to `OWNER` and `ADMIN` only (`roleGuard`). The header shows **My listings** and **Bookings** to them.
+
+- **My listings** (`/my-listings`, from `GET /api/v1/equipment/mine`): every listing the owner has, with its status.
+  - **Edit:** opens the listing form.
+  - **Pause bookings / Take bookings:** sets the status to `UNDER_MAINTENANCE` or `AVAILABLE`. Existing bookings stay.
+  - **Delete:** asks first. When the API refuses because the listing has pending or upcoming bookings (`409`), its reason shows and the listing stays.
+- **New and edit listing** (`/my-listings/new`, `/my-listings/:id/edit`):
+  - **Validation:** name, category and location are required, and the daily rate must be above zero. The limits match the API.
+  - **Partial updates:** an edit sends only the fields that changed (the API applies only what it receives), and saving with no changes sends nothing.
+  - **Ownership:** another owner's listing can't be edited (the API refuses it anyway).
+- **Write it for me:** with a name and category (plus a location for a rate suggestion, and optional details), `POST /api/v1/equipment/ai/describe` drafts a title and description. It also suggests a rate when there are similar listings to compare with, and says why. The owner copies the text, the rate, or both into the form and can still change them. Nothing is saved until **Create listing**. The section is hidden when AI is off, and it shows the API's message when AI is unavailable or the per-minute limit is reached.
+- **Bookings on my equipment** (`/owner-bookings`, from `GET /api/v1/bookings/for-my-equipment`): earliest first, filtered by status through the URL (`?status=PENDING`). Each booking shows the listing, dates and number of days, total and request date. The buttons follow the API's rules:
+  - **Pending:** Confirm (no question asked) or Decline. Confirming also declines the other pending requests for those days.
+  - **Confirmed or Active:** Complete or Cancel.
+  - **Completed or Cancelled:** nothing.
+
+  Decline, Complete and Cancel ask first. When the API refuses an action (for example the booking changed meanwhile), its reason shows and the list reloads.
 
 ### Running it
 
@@ -752,6 +773,7 @@ HireMe/
 │   ├── src/app/core/auth/    AuthService (session), interceptor, guards
 │   ├── src/app/pages/        Login, register, home
 │   ├── src/app/features/equipment/  Equipment list (filters, AI search) and detail
+│   ├── src/app/features/owner/      My listings, listing form ("Write it for me"), bookings on my equipment
 │   ├── openapi/              Copy of the backend's OpenAPI document
 │   └── Dockerfile, nginx.conf
 ├── Dockerfile                Multi-stage build (Maven build → JRE runtime, non-root user)

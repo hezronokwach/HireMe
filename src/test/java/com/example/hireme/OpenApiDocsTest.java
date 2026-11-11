@@ -53,7 +53,8 @@ class OpenApiDocsTest {
                 "/api/v1/bookings", "/api/v1/bookings/{id}", "/api/v1/bookings/my-bookings",
                 "/api/v1/bookings/for-my-equipment", "/api/v1/bookings/{id}/confirm",
                 "/api/v1/bookings/{id}/cancel", "/api/v1/bookings/{id}/complete", "/api/v1/ai/status",
-                "/api/v1/equipment/ai/describe", "/api/v1/equipment/ai/search");
+                "/api/v1/equipment/ai/describe", "/api/v1/equipment/ai/search",
+                "/api/v1/equipment/mine");
         List<String> missing = new ArrayList<>(expected.stream().filter(p -> !paths.has(p)).toList());
         assertTrue(missing.isEmpty(), "missing paths: " + missing);
     }
