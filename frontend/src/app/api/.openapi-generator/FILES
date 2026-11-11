@@ -11,6 +11,8 @@ index.ts
 model/ai-search-request.ts
 model/ai-search-response.ts
 model/ai-status-response.ts
+model/assistant-chat-request.ts
+model/assistant-chat-response.ts
 model/auth-response.ts
 model/booked-period.ts
 model/booking-response.ts
@@ -22,10 +24,13 @@ model/equipment-description-response.ts
 model/equipment-response.ts
 model/equipment-search-criteria.ts
 model/error-response.ts
+model/listing-card.ts
 model/login-request.ts
+model/message.ts
 model/models.ts
 model/page-response-booking-response.ts
 model/page-response-equipment-response.ts
+model/quote.ts
 model/register-request.ts
 model/update-equipment-request.ts
 model/user-response.ts
