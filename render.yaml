@@ -1,6 +1,6 @@
 # Render Blueprint for the API. The database is on Neon, not Render.
 # In Render: New → Blueprint, pick this repo. Values marked "sync: false" are asked for when the
-# Blueprint is first applied and are never stored here. Full steps: docs/deployment.md.
+# Blueprint is first applied and are never stored here. Full steps: DEPLOYMENT.md.
 
 services:
   - type: web
