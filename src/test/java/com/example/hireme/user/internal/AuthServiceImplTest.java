@@ -2,8 +2,11 @@ package com.example.hireme.user.internal;
 
 import com.example.hireme.shared.security.JwtTokenProvider;
 import com.example.hireme.user.AuthResponse;
+import com.example.hireme.user.DemoAccounts;
+import com.example.hireme.user.DemoStatusResponse;
 import com.example.hireme.user.LoginRequest;
 import com.example.hireme.user.Role;
+import com.example.hireme.user.internal.exception.DemoUnavailableException;
 import com.example.hireme.user.internal.exception.InvalidCredentialsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -92,5 +96,53 @@ class AuthServiceImplTest {
 
         assertEquals("token456", response.token());
         assertEquals(Role.OWNER, response.role());
+    }
+
+    // Demo owner (portfolio deployments)
+
+    private User demoOwner() {
+        User user = new User();
+        user.setId(3L);
+        user.setEmail(DemoAccounts.OWNER_EMAIL);
+        user.setRole(Role.OWNER);
+        return user;
+    }
+
+    @Test
+    void demoOwnerLogin_demoOn_signsInWithoutAPassword() {
+        ReflectionTestUtils.setField(authService, "demoEnabled", true);
+        when(userRepository.findByEmail(DemoAccounts.OWNER_EMAIL)).thenReturn(Optional.of(demoOwner()));
+        when(jwtTokenProvider.generateToken(DemoAccounts.OWNER_EMAIL, "ROLE_OWNER")).thenReturn("demo-token");
+        when(jwtTokenProvider.getJwtExpirationMs()).thenReturn(3_600_000L);
+
+        AuthResponse response = authService.demoOwnerLogin();
+
+        assertEquals("demo-token", response.token());
+        assertEquals(Role.OWNER, response.role());
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void demoOwnerLogin_demoOff_isNotFound() {
+        assertThrows(DemoUnavailableException.class, () -> authService.demoOwnerLogin());
+        verifyNoInteractions(userRepository, jwtTokenProvider);
+    }
+
+    @Test
+    void demoOwnerLogin_demoOnButNotSeededYet_isNotFound() {
+        ReflectionTestUtils.setField(authService, "demoEnabled", true);
+        when(userRepository.findByEmail(DemoAccounts.OWNER_EMAIL)).thenReturn(Optional.empty());
+
+        assertThrows(DemoUnavailableException.class, () -> authService.demoOwnerLogin());
+    }
+
+    @Test
+    void demoStatus_reportsTheOwnerOnlyWhenDemoIsOnAndSeeded() {
+        assertEquals(new DemoStatusResponse(false, null), authService.demoStatus());
+
+        ReflectionTestUtils.setField(authService, "demoEnabled", true);
+        when(userRepository.existsByEmail(DemoAccounts.OWNER_EMAIL)).thenReturn(true);
+
+        assertEquals(new DemoStatusResponse(true, DemoAccounts.OWNER_EMAIL), authService.demoStatus());
     }
 }

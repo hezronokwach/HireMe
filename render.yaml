@@ -35,11 +35,11 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
-      # A demo owner with 15 listings, added once on the first start, so new users have something to
-      # browse. Set to "false" when real owners have listed their equipment.
+      # Portfolio mode: 15 demo listings to browse without an account, a one-click "Sign in as the demo
+      # owner" with booking requests to answer, put back on every start. "false" for a real launch.
       - key: HIREME_DEMO_LISTINGS
         value: "true"
-      # Optional: lets you log in as demo-owner@hireme.example to see the bookings on the demo listings.
+      # Optional: a password for demo-owner@hireme.example; the one-click demo sign-in doesn't need it.
       - key: HIREME_DEMO_OWNER_PASSWORD
         sync: false
       - key: SPRING_JPA_SHOW_SQL

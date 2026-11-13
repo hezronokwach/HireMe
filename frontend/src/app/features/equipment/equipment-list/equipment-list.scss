@@ -4,6 +4,78 @@
   margin: 0 auto;
 }
 
+// For signed-out visitors: what HireMe is, in one line, above the listings themselves.
+// Laid out like a hire docket: a thick rule on the left, facts in a row, no hero image.
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px 24px;
+  margin: 0 0 24px;
+  padding: 4px 0 4px 16px;
+  border-left: 4px solid var(--mat-sys-primary);
+}
+
+.lede {
+  grid-column: 1 / -1;
+  margin: 0;
+  max-width: 60ch;
+  font: var(--mat-sys-title-large);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.owner-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font: var(--mat-sys-body-medium);
+  white-space: nowrap;
+
+  &:hover strong {
+    text-decoration: underline;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 599px) {
+  .intro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .owner-side {
+    white-space: normal;
+  }
+}
+
 h1 {
   font: var(--mat-sys-headline-small);
   margin: 0 0 12px;

@@ -1,3 +1,20 @@
+@if (!auth.isLoggedIn()) {
+  <section class="intro" aria-label="About HireMe" data-testid="intro">
+    <p class="lede">
+      Tractors in Nakuru, excavators in Nairobi, tents in Mombasa: hire them by the day from the
+      people who own them.
+    </p>
+    <ul class="facts">
+      <li><mat-icon aria-hidden="true">visibility</mat-icon>Look around freely</li>
+      <li><mat-icon aria-hidden="true">event_available</mat-icon>Sign in only when you book</li>
+      <li><mat-icon aria-hidden="true">payments</mat-icon>Prices in KES, both days counted</li>
+    </ul>
+    <a class="owner-side" routerLink="/login">
+      Own equipment? <strong>See the owner side</strong>
+      <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+    </a>
+  </section>
+}
 <h1>Find equipment</h1>
 @if (aiEnabled()) {
   <app-assistant-panel class="assistant" />

@@ -1,26 +1,21 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, roleGuard } from './core/auth/auth.guards';
+import { guestGuard, roleGuard } from './core/auth/auth.guards';
 
 const ownerOnly = roleGuard('OWNER', 'ADMIN');
 const clientOnly = roleGuard('CLIENT', 'ADMIN');
 
 export const routes: Routes = [
-  {
-    path: '',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/home/home').then((m) => m.Home),
-    title: 'HireMe',
-  },
+  // No landing page: the app opens on the equipment, which anyone can browse. Signing in is only
+  // needed to book (clients) or to manage listings (owners).
+  { path: '', pathMatch: 'full', redirectTo: 'equipment' },
   {
     path: 'equipment',
-    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/equipment/equipment-list/equipment-list').then((m) => m.EquipmentList),
     title: 'Find equipment · HireMe',
   },
   {
     path: 'equipment/:id',
-    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/equipment/equipment-detail/equipment-detail').then(
         (m) => m.EquipmentDetail,

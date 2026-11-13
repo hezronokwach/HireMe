@@ -72,7 +72,7 @@
                   <p class="quote busy">Not taking bookings right now</p>
                 }
                 <div class="card-actions">
-                  @if (isClient() && card.quote?.free) {
+                  @if (canBook() && card.quote?.free) {
                     <a
                       mat-flat-button
                       [routerLink]="['/equipment', card.id]"

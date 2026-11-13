@@ -911,8 +911,8 @@
         "tags": [
           "AI"
         ],
-        "summary": "Talk with the hire assistant",
-        "description": "A conversation that finds, compares and prices listings. Send the whole conversation so far (the server keeps nothing); the last message is the user's. The assistant reads the real listings through read-only tools. `listings` are cards built from the database, only for listings it looked up, with the price and availability for the days being discussed. It never books anything.",
+        "summary": "Talk with the hire assistant (no token needed)",
+        "description": "A conversation that finds, compares and prices listings. Send the whole conversation so far (the server keeps nothing); the last message is the user's. The assistant reads the real listings through read-only tools. `listings` are cards built from the database, only for listings it looked up, with the price and availability for the days being discussed. It never books anything. Signed-out visitors may use it too; they share one rate-limit budget.",
         "operationId": "chatWithAssistant",
         "requestBody": {
           "content": {
@@ -1175,12 +1175,55 @@
         "security": []
       }
     },
+    "/api/v1/auth/demo-owner": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Sign in as the demo owner, without a password",
+        "description": "Only on deployments seeded with demo data (`hireme.demo-listings.enabled=true`), so visitors can try the owner side in one click.",
+        "operationId": "loginAsDemoOwner",
+        "responses": {
+          "200": {
+            "description": "Signed in as the demo owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "This server has no demo data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
     "/api/v1/equipment/{equipmentId}/availability": {
       "get": {
         "tags": [
           "Equipment"
         ],
-        "summary": "Booked dates of a listing",
+        "summary": "Booked dates of a listing (no token needed)",
         "description": "Confirmed or active bookings overlapping [from, to]. At most 366 days.",
         "operationId": "getEquipmentAvailability",
         "parameters": [
@@ -1611,12 +1654,44 @@
         }
       }
     },
+    "/api/v1/auth/demo": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Whether the demo owner is available on this server",
+        "operationId": "getDemoStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
     "/api/v1/ai/status": {
       "get": {
         "tags": [
           "AI"
         ],
-        "summary": "Whether AI features are on",
+        "summary": "Whether AI features are on (no token needed)",
         "description": "Lets the frontend hide AI buttons when they would only return 503.",
         "operationId": "getAiStatus",
         "responses": {
@@ -2322,6 +2397,17 @@
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "DemoStatusResponse": {
+        "type": "object",
+        "properties": {
+          "ownerAvailable": {
+            "type": "boolean"
+          },
+          "ownerEmail": {
+            "type": "string"
           }
         }
       },

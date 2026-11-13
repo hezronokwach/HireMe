@@ -352,7 +352,7 @@ export class EquipmentService extends BaseService {
   }
 
   /**
-   * Booked dates of a listing
+   * Booked dates of a listing (no token needed)
    * Confirmed or active bookings overlapping [from, to]. At most 366 days.
    * @endpoint get /api/v1/equipment/{equipmentId}/availability
    * @param equipmentId

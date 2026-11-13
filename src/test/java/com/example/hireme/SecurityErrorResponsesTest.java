@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SecurityErrorResponsesTest {
 
-    private static final String PROTECTED_URL = "/api/v1/equipment";
+    private static final String PROTECTED_URL = "/api/v1/equipment/mine";
+    private static final String OWNER_ONLY_POST = "/api/v1/equipment";
 
     @Value("${local.server.port}")
     private int port;
@@ -76,15 +77,40 @@ class SecurityErrorResponsesTest {
     void validTokenWithoutRequiredRole_returns403() throws Exception {
         String clientToken = login();
 
-        HttpResponse<String> response = send(post(PROTECTED_URL, clientToken, """
+        HttpResponse<String> response = send(post(OWNER_ONLY_POST, clientToken, """
                 {"name":"Tractor","category":"AGRICULTURAL","description":"d","dailyRateKes":5000,"location":"Nakuru"}"""));
 
         assertEquals(403, response.statusCode());
     }
 
     @Test
-    void validToken_returns200() throws Exception {
-        assertEquals(200, send(get(PROTECTED_URL, login())).statusCode());
+    void validTokenWithoutTheRoleForAnOwnerPage_returns403() throws Exception {
+        assertEquals(403, send(get(PROTECTED_URL, login())).statusCode());
+    }
+
+    // Browsing is public: signing in is only needed to book or to list equipment.
+
+    @Test
+    void browsingWithoutAToken_isAllowed() throws Exception {
+        assertEquals(200, send(get("/api/v1/equipment", null)).statusCode());
+        assertEquals(404, send(get("/api/v1/equipment/999999", null)).statusCode());
+        assertEquals(200, send(get("/api/v1/ai/status", null)).statusCode());
+        assertEquals(200, send(get("/api/v1/auth/demo", null)).statusCode());
+    }
+
+    @Test
+    void ownerAndBookingEndpoints_stillNeedAToken() throws Exception {
+        assertEquals(401, send(get("/api/v1/bookings/my-bookings", null)).statusCode());
+        assertEquals(401, send(get("/api/v1/bookings/for-my-equipment", null)).statusCode());
+        assertEquals(401, send(post("/api/v1/bookings", null, "{}")).statusCode());
+    }
+
+    @Test
+    void demoOwnerSignIn_isNotFoundWhenTheServerHasNoDemoData() throws Exception {
+        HttpResponse<String> response = send(post("/api/v1/auth/demo-owner", null, ""));
+
+        assertEquals(404, response.statusCode());
+        assertFalse(jsonMapper.readTree(send(get("/api/v1/auth/demo", null)).body()).get("ownerAvailable").asBoolean());
     }
 
     private String login() throws Exception {

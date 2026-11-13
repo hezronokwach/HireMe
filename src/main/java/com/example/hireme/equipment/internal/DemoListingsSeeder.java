@@ -2,7 +2,9 @@ package com.example.hireme.equipment.internal;
 
 import com.example.hireme.equipment.Category;
 import com.example.hireme.equipment.CreateEquipmentRequest;
+import com.example.hireme.equipment.EquipmentResponse;
 import com.example.hireme.equipment.EquipmentService;
+import com.example.hireme.user.DemoAccounts;
 import com.example.hireme.user.RegisterRequest;
 import com.example.hireme.user.Role;
 import com.example.hireme.user.UserService;
@@ -12,26 +14,31 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Demo listings, so a new deployment isn't empty: a client who signs up straight away has equipment
  * to browse, book and ask the assistant about. Off unless {@code hireme.demo-listings.enabled=true}.
  * <p>
- * The listings belong to a demo owner account ({@link #DEMO_OWNER_EMAIL}). It is created once; when it
- * already exists nothing is added, so restarts and redeploys never add duplicates. Its password comes from
- * {@code hireme.demo-listings.owner-password}; without one it gets a random password nobody knows, and the
- * listings are just there to browse and book.
+ * The listings belong to a demo owner account ({@link #DEMO_OWNER_EMAIL}), created on the first start.
+ * Visitors can sign in as it from the login page and change things, so every start puts back any demo
+ * listing that is missing (matched by name); listings already there are left alone, so nothing is duplicated.
+ * Its password comes from {@code hireme.demo-listings.owner-password}; without one it gets a random password,
+ * and the one-click demo sign-in is the only way in.
  */
 @Component
 @ConditionalOnProperty(name = "hireme.demo-listings.enabled", havingValue = "true")
 class DemoListingsSeeder {
 
-    static final String DEMO_OWNER_EMAIL = "demo-owner@hireme.example";
+    static final String DEMO_OWNER_EMAIL = DemoAccounts.OWNER_EMAIL;
 
     private static final Logger log = LoggerFactory.getLogger(DemoListingsSeeder.class);
 
@@ -46,17 +53,25 @@ class DemoListingsSeeder {
         this.ownerPassword = ownerPassword == null ? "" : ownerPassword.strip();
     }
 
+    // Runs before the demo bookings (booking module), which need these listings.
+    @Order(1)
     @EventListener(ApplicationReadyEvent.class)
     public void seed() {
-        if (userService.getUserIdByEmail(DEMO_OWNER_EMAIL).isPresent()) {
-            log.info("Demo listings: the demo owner already exists, nothing to add");
-            return;
-        }
+        Long ownerId = userService.getUserIdByEmail(DEMO_OWNER_EMAIL).orElseGet(this::createOwner);
+        Set<String> existing = equipmentService.getByOwner(ownerId, PageRequest.of(0, 100)).content().stream()
+                .map(EquipmentResponse::name)
+                .collect(Collectors.toSet());
+        List<CreateEquipmentRequest> missing = LISTINGS.stream()
+                .filter(listing -> !existing.contains(listing.name()))
+                .toList();
+        missing.forEach(listing -> equipmentService.create(listing, ownerId));
+        log.info("Demo listings: {} added, {} already there", missing.size(), LISTINGS.size() - missing.size());
+    }
+
+    private Long createOwner() {
         String password = ownerPassword.length() >= 8 ? ownerPassword : UUID.randomUUID().toString();
-        Long ownerId = userService.register(new RegisterRequest("HireMe Demo Rentals", DEMO_OWNER_EMAIL,
+        return userService.register(new RegisterRequest("HireMe Demo Rentals", DEMO_OWNER_EMAIL,
                 "+254700000000", password, Role.OWNER)).id();
-        LISTINGS.forEach(listing -> equipmentService.create(listing, ownerId));
-        log.info("Demo listings: added {} listings owned by {}", LISTINGS.size(), DEMO_OWNER_EMAIL);
     }
 
     static final List<CreateEquipmentRequest> LISTINGS = List.of(

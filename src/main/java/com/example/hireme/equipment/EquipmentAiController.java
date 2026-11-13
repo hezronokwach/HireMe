@@ -1,5 +1,6 @@
 package com.example.hireme.equipment;
 
+import com.example.hireme.ai.AiAssistant;
 import com.example.hireme.shared.web.PageRequests;
 import com.example.hireme.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,12 +67,12 @@ public class EquipmentAiController {
     }
 
     @PostMapping("/assistant")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(operationId = "chatWithAssistant", summary = "Talk with the hire assistant",
+    @Operation(operationId = "chatWithAssistant", summary = "Talk with the hire assistant (no token needed)",
             description = "A conversation that finds, compares and prices listings. Send the whole conversation so far "
                     + "(the server keeps nothing); the last message is the user's. The assistant reads the real listings "
                     + "through read-only tools. `listings` are cards built from the database, only for listings it looked "
-                    + "up, with the price and availability for the days being discussed. It never books anything.")
+                    + "up, with the price and availability for the days being discussed. It never books anything. "
+                    + "Signed-out visitors may use it too; they share one rate-limit budget.")
     @ApiResponse(responseCode = "200", description = "The assistant's reply, listing cards and suggested follow-ups")
     @ApiResponse(responseCode = "429", description = "Too many AI requests from this user in the last minute")
     @ApiResponse(responseCode = "503", description = "AI is turned off or Groq is unavailable")
@@ -79,7 +80,8 @@ public class EquipmentAiController {
             @Valid @RequestBody AssistantChatRequest request,
             @AuthenticationPrincipal User userDetails
     ) {
-        return ResponseEntity.ok(assistantService.chat(request, getUserId(userDetails)));
+        Long userId = userDetails == null ? AiAssistant.GUEST_USER_ID : getUserId(userDetails);
+        return ResponseEntity.ok(assistantService.chat(request, userId));
     }
 
     private Long getUserId(User userDetails) {

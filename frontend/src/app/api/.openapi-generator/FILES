@@ -18,6 +18,7 @@ model/booked-period.ts
 model/booking-response.ts
 model/create-booking-request.ts
 model/create-equipment-request.ts
+model/demo-status-response.ts
 model/describe-equipment-request.ts
 model/equipment-availability-response.ts
 model/equipment-description-response.ts

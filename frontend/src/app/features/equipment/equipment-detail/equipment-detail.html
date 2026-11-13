@@ -40,7 +40,7 @@
           <p class="status" [class.unavailable]="item.equipmentStatus !== 'AVAILABLE'">
             {{ statusLabel(item.equipmentStatus) }}
           </p>
-          @if (auth.hasRole('CLIENT')) {
+          @if (auth.hasRole('CLIENT') || !auth.isLoggedIn()) {
             @if (item.equipmentStatus === 'AVAILABLE') {
               <app-booking-form
                 [equipment]="item"
@@ -48,10 +48,16 @@
                 [lastDay]="lastShownDay"
                 [initialFrom]="from()"
                 [initialTo]="to()"
+                [guest]="!auth.isLoggedIn()"
               />
             } @else {
               <p class="hint">This listing isn't taking bookings right now.</p>
             }
+          } @else {
+            <p class="hint" data-testid="owner-hint">
+              You're signed in as an owner. Clients book from here; to try it, log out and book with
+              a client account.
+            </p>
           }
         </mat-card>
 

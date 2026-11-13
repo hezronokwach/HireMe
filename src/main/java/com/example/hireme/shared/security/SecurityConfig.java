@@ -3,6 +3,7 @@ package com.example.hireme.shared.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -101,6 +102,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        // Browsing is open to everyone: signing in is only needed to book (or to list equipment).
+                        // Numeric ids only, so /api/v1/equipment/mine stays private.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/equipment", "/api/v1/equipment/{id:\\d+}",
+                                "/api/v1/equipment/{id:\\d+}/availability", "/api/v1/ai/status").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/equipment/ai/assistant").permitAll()
                         // API docs; turn them off with springdoc.api-docs.enabled=false / springdoc.swagger-ui.enabled=false
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         .anyRequest().authenticated()

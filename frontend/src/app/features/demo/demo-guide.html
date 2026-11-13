@@ -1,0 +1,51 @@
+<aside class="guide" [class.collapsed]="collapsed()" aria-labelledby="demo-guide-title">
+  <div class="bar">
+    <p id="demo-guide-title" class="title">
+      <mat-icon aria-hidden="true">storefront</mat-icon>
+      <span>You're the demo owner, <strong>HireMe Demo Rentals</strong></span>
+    </p>
+    <button
+      mat-button
+      type="button"
+      (click)="toggle()"
+      [attr.aria-expanded]="!collapsed()"
+      aria-controls="demo-guide-steps"
+    >
+      <mat-icon>{{ collapsed() ? 'expand_more' : 'expand_less' }}</mat-icon>
+      {{ collapsed() ? 'Show the guide' : 'Hide the guide' }}
+    </button>
+  </div>
+
+  @if (!collapsed()) {
+    <ol id="demo-guide-steps" class="steps">
+      @for (step of steps; track step.title; let i = $index) {
+        <li>
+          <a
+            [routerLink]="step.link"
+            [queryParams]="step.query ?? {}"
+            routerLinkActive="current"
+            [routerLinkActiveOptions]="{
+              paths: 'exact',
+              queryParams: step.query ? 'exact' : 'ignored',
+              fragment: 'ignored',
+              matrixParams: 'ignored',
+            }"
+          >
+            <span class="number" aria-hidden="true">{{ i + 1 }}</span>
+            <span class="text">
+              <strong>{{ step.title }}</strong>
+              <span>{{ step.text }}</span>
+            </span>
+          </a>
+        </li>
+      }
+    </ol>
+    <div class="footer">
+      <p>Other visitors share this demo. It puts itself back together when the server restarts.</p>
+      <button mat-button type="button" (click)="auth.logout()">
+        <mat-icon>logout</mat-icon>
+        Leave the demo
+      </button>
+    </div>
+  }
+</aside>

@@ -17,6 +17,7 @@ import { Observable, catchError, combineLatest, map, of, scan, startWith, switch
 import { AIService, EquipmentService, PageResponseEquipmentResponse } from '../../../api';
 import { errorMessage } from '../../../core/api-errors';
 import { AssistantPanel } from '../../assistant/assistant-panel';
+import { AuthService } from '../../../core/auth/auth.service';
 import { addDays, fromIsoDay, startOfToday, toIsoDay } from '../../../core/dates';
 import {
   CATEGORIES,
@@ -71,6 +72,7 @@ interface Results {
 export class EquipmentList {
   private readonly equipmentApi = inject(EquipmentService);
   private readonly aiApi = inject(AIService);
+  protected readonly auth = inject(AuthService);
   protected readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(NonNullableFormBuilder);

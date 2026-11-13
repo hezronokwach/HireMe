@@ -74,6 +74,11 @@
         </button>
       </div>
     </form>
-    <p class="switch">Already have an account? <a routerLink="/login">Log in</a></p>
+    <p class="switch">
+      Already have an account?
+      <a routerLink="/login" [queryParams]="returnUrl() ? { returnUrl: returnUrl() } : {}"
+        >Log in</a
+      >
+    </p>
   </mat-card-content>
 </mat-card>

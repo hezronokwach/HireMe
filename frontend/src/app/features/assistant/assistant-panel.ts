@@ -39,7 +39,10 @@ export class AssistantPanel {
   protected readonly formatKes = formatKes;
   protected readonly formatRange = formatRange;
   protected readonly categoryIcon = categoryIcon;
-  protected readonly isClient = computed(() => this.auth.hasRole('CLIENT'));
+  // Clients book; signed-out visitors too (the listing then asks them to sign in, keeping the days).
+  protected readonly canBook = computed(
+    () => this.auth.hasRole('CLIENT') || !this.auth.isLoggedIn(),
+  );
   protected readonly draft = signal('');
   /** Suggestions are offered only under the latest answer. */
   protected readonly lastIndex = computed(() => this.chat.entries().length - 1);

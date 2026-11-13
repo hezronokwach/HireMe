@@ -1,22 +1,30 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
+import { AuthService as AuthApi, DemoStatusResponse } from '../../api';
 import { AuthService, Session } from '../../core/auth/auth.service';
 import { Login } from './login';
 
 describe('Login', () => {
   let fixture: ComponentFixture<Login>;
   let response: Subject<Session>;
-  const auth = { login: vi.fn() };
+  const auth = { login: vi.fn(), loginAsDemoOwner: vi.fn() };
+  let demoStatus: DemoStatusResponse;
   let navigateByUrl: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
     response = new Subject<Session>();
     auth.login.mockReset().mockReturnValue(response);
+    auth.loginAsDemoOwner.mockReset().mockReturnValue(response);
+    demoStatus = { ownerAvailable: false };
     TestBed.configureTestingModule({
       imports: [Login],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: auth },
+        { provide: AuthApi, useValue: { getDemoStatus: () => of(demoStatus) } },
+      ],
     });
     navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     fixture = TestBed.createComponent(Login);
@@ -76,5 +84,42 @@ describe('Login', () => {
       'Invalid email or password',
     );
     expect(el().querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
+  });
+
+  describe('demo owner', () => {
+    async function recreate(): Promise<void> {
+      fixture = TestBed.createComponent(Login);
+      await fixture.whenStable();
+    }
+
+    it('is not offered when the server has no demo data', () => {
+      expect(el().querySelector('[data-testid="demo-owner"]')).toBeNull();
+    });
+
+    it('signs in with one click and opens the booking requests', async () => {
+      demoStatus = { ownerAvailable: true, ownerEmail: 'demo-owner@hireme.example' };
+      await recreate();
+      const button = el().querySelector<HTMLButtonElement>('[data-testid="demo-owner"] button')!;
+      expect(button.textContent).toContain('Sign in as the demo owner');
+
+      button.click();
+      expect(auth.loginAsDemoOwner).toHaveBeenCalled();
+      response.next({} as Session);
+      expect(navigateByUrl).toHaveBeenCalledWith('/owner-bookings');
+    });
+
+    it("shows the backend's message when the demo isn't available", async () => {
+      demoStatus = { ownerAvailable: true };
+      await recreate();
+      el().querySelector<HTMLButtonElement>('[data-testid="demo-owner"] button')!.click();
+      response.error(
+        new HttpErrorResponse({
+          status: 404,
+          error: { message: "The demo isn't set up on this server" },
+        }),
+      );
+      await fixture.whenStable();
+      expect(el().querySelector('[role="alert"]')?.textContent).toContain("isn't set up");
+    });
   });
 });

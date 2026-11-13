@@ -78,4 +78,15 @@ class EquipmentAiControllerTest {
 
         assertSame(answer, response.getBody());
     }
+
+    @Test
+    void chat_signedOutVisitor_usesTheSharedGuestBudget() {
+        AssistantChatRequest request = new AssistantChatRequest(List.of(
+                new AssistantChatRequest.Message(AssistantChatRequest.Role.USER, "a tent in Mombasa", null)));
+        AssistantChatResponse answer = new AssistantChatResponse("Here is one.", List.of(), null, null, List.of());
+        when(assistantService.chat(request, com.example.hireme.ai.AiAssistant.GUEST_USER_ID)).thenReturn(answer);
+
+        assertSame(answer, controller.chat(request, null).getBody());
+        verifyNoInteractions(userService);
+    }
 }
