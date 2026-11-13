@@ -235,7 +235,12 @@ GROQ_API_KEY=<your Groq key>
   ```
 - `JwtAuthenticationFilter` validates the token, loads the user through `CustomUserDetailsService` and fills in the security context. Roles become authorities with a `ROLE_` prefix (`ROLE_CLIENT`, `ROLE_OWNER`, `ROLE_ADMIN`).
 - **Authorisation** uses `@PreAuthorize` on each endpoint (method security is enabled). Ownership checks, such as "is this your equipment?", happen in the service layer.
-- **Public routes:** `/api/v1/auth/**`, `/actuator/**` and the API docs (`/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`). Every other route needs a valid token.
+- **Public routes:** `/api/v1/auth/**`, `/actuator/**` and the API docs (`/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`).
+- **Browsing is public too**, because a visitor only needs an account to book:
+  - `GET /api/v1/equipment`, `GET /api/v1/equipment/{id}` and `GET /api/v1/equipment/{id}/availability` (numeric ids only, so `/equipment/mine` stays private);
+  - `GET /api/v1/ai/status`;
+  - `POST /api/v1/equipment/ai/assistant`. Signed-out visitors share one AI rate-limit budget (`AiAssistant.GUEST_USER_ID`).
+- **Every other route needs a valid token.**
 - **CORS** allows only `app.frontend-url` (default `http://localhost:4200`, set with `FRONTEND_URL`), with credentials, for `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 - **CSRF** uses a cookie-based token repository (`XSRF-TOKEN` cookie, `X-XSRF-TOKEN` header) for non-API routes. It is turned off for `/api/v1/**` and `/actuator/**` because those requests use bearer tokens, not cookies.
 - Passwords are hashed with BCrypt.
@@ -293,6 +298,13 @@ Response (`UserResponse`):
 
 Returns `409` if the email is already registered and `400` on validation errors.
 
+#### Demo owner: `GET /auth/demo` and `POST /auth/demo-owner`
+
+Only on deployments seeded with demo data (`HIREME_DEMO_LISTINGS=true`; see [Configuration](#configuration)).
+
+- **`GET /auth/demo`** returns `{ "ownerAvailable": true, "ownerEmail": "demo-owner@hireme.example" }`, so the login page knows whether to offer the demo.
+- **`POST /auth/demo-owner`** signs in as the demo owner without a password. It returns the same body as login, or `404` when the server has no demo data.
+
 #### `POST /auth/login` → `200 OK`
 
 ```json
@@ -317,12 +329,12 @@ Returns `401` for a wrong email or password.
 | Method   | Path              | Roles          | Description                                       |
 |----------|-------------------|----------------|---------------------------------------------------|
 | `POST`   | `/equipment`      | OWNER, ADMIN   | Create a listing (`201`). The caller becomes the owner. |
-| `GET`    | `/equipment`      | Authenticated  | Search equipment, one page at a time (see [Paging and filters](#paging-and-filters)). |
+| `GET`    | `/equipment`      | Public         | Search equipment, one page at a time (see [Paging and filters](#paging-and-filters)). |
 | `GET`    | `/equipment/mine` | OWNER, ADMIN   | The caller's own listings, any status, one page at a time (`page`, `size`, `sort` as for the search). |
-| `GET`    | `/equipment/{id}` | Authenticated  | Get one item (`404` if it does not exist).        |
-| `GET`    | `/equipment/{id}/availability` | Authenticated | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
+| `GET`    | `/equipment/{id}` | Public         | Get one item (`404` if it does not exist).        |
+| `GET`    | `/equipment/{id}/availability` | Public | Booked dates between `?from=` and `?to=` (ISO dates, both optional: defaults to the next 90 days, at most 366 days). |
 | `PUT`    | `/equipment/{id}` | OWNER, ADMIN   | Update a listing you own (ADMIN: any listing). Only the fields you send are changed; send `"status": "UNDER_MAINTENANCE"` to stop new bookings. |
-| `POST`   | `/equipment/ai/assistant` | Authenticated | Talk with the hire assistant; returns its reply, listing cards with prices and suggested follow-ups (see [AI Features](#ai-features)). |
+| `POST`   | `/equipment/ai/assistant` | Public (guests share one rate-limit budget) | Talk with the hire assistant; returns its reply, listing cards with prices and suggested follow-ups (see [AI Features](#ai-features)). |
 | `POST`   | `/equipment/ai/search` | Authenticated | Search with a sentence; returns the interpreted filters and the results (see [AI Features](#ai-features)). |
 | `POST`   | `/equipment/ai/describe` | OWNER, ADMIN | Draft a title, description and daily rate with AI (see [AI Features](#ai-features)). Nothing is saved. |
 | `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`409`) while it has `PENDING`, `CONFIRMED` or `ACTIVE` bookings that end today or later. |
@@ -508,10 +520,20 @@ It covers accounts, finding equipment, booking it, and the owner pages.
 ### Accounts
 
 - **Register** (`/register`): the user picks "I want to hire equipment" (`CLIENT`) or "I have equipment to rent out" (`OWNER`). The phone number must be a Kenyan mobile number (`07XXXXXXXX` or `+2547XXXXXXXX`, the same rule as the API); spaces and dashes are allowed. The user is signed in right after.
-- **Log in** (`/login`): afterwards the user goes back to the page that sent them there (`?returnUrl=`, only paths inside the app).
+- **No landing page, and no account needed to look around.** `/` opens the equipment list, and listings, their booked dates and the assistant all work signed out.
+  - **Who needs an account:** clients sign in only to book, and owners to manage listings.
+  - **Header:** signed-out visitors see a short intro above the listings and a **Log in** button.
+- **Log in** (`/login`): afterwards the user goes back to the page that sent them there (`?returnUrl=`, only paths inside the app). The **Create an account** link keeps that return address too.
+- **Demo owner** (portfolio deployments): under the login form, **Sign in as the demo owner** opens the owner side in one click (`POST /api/v1/auth/demo-owner`) on **Bookings on my equipment**. A guide strip across the top suggests what to try, with links:
+  - answer the demo client's requests;
+  - complete a hire;
+  - edit a listing;
+  - draft one with AI.
+
+  The guide can be folded away (remembered in `localStorage`), and **Leave the demo** signs out. It only shows when the server reports demo data (`GET /api/v1/auth/demo`).
 - **Session**: the JWT, user id, role and email (from the token's subject) are kept in `localStorage`, so a reload stays signed in. The session ends by itself when the token expires. The header shows the user and a **Log out** button.
 - **Interceptor**: adds `Authorization: Bearer <token>` to requests for the backend only, never to other hosts. When the backend answers `401` to a signed-in request, it signs the user out and opens the login page.
-- **Guards**: `authGuard` (signed in), `guestGuard` (keeps signed-in users off login and register) and `roleGuard('OWNER', 'ADMIN')` for role-only pages.
+- **Guards**: `guestGuard` (keeps signed-in users off login and register) and `roleGuard(...)` for the client and owner pages. `authGuard` (any signed-in user) is available but not needed by any route now.
 
 ### Finding equipment
 
@@ -530,6 +552,8 @@ It covers accounts, finding equipment, booking it, and the owner pages.
 
 ### For clients
 
+- **Signed-out visitors** can pick dates on a listing and see the total. **Sign in to book** takes them to log in (or create an account), then back to the listing with the same dates, where the button becomes **Request booking**. The assistant's **Book these dates** works the same way.
+- **Signed-in owners** see a note on the detail page instead of the form: clients book there.
 - **Booking** (on the detail page, for listings that take bookings):
   - **Dates:** the client picks a range. Past days and days with a confirmed or active booking can't be picked, and a typed range that runs over a booked day is refused.
   - **Total:** shown before sending, as `days × daily rate` with both the first and last day counted, the same as the API. A single picked day is a one-day booking.
@@ -699,8 +723,14 @@ java -jar target/HireMe-0.0.1-SNAPSHOT.jar
 | `hireme.ai.base-url`     | n/a                  | `https://api.groq.com/openai/v1` | OpenAI-compatible endpoint             |
 | `hireme.ai.timeout` / `hireme.ai.max-retries` | n/a | `20s` / `1`           | Give up on a slow or failing Groq call         |
 | `hireme.ai.requests-per-minute` | n/a           | `10`                     | AI calls per user per rolling minute, then `429` |
-| `hireme.demo-listings.enabled` | `HIREME_DEMO_LISTINGS` | `false`     | On start, add a demo owner (`demo-owner@hireme.example`) with 15 listings across all categories and towns, once: nothing is added when that owner already exists |
-| `hireme.demo-listings.owner-password` | `HIREME_DEMO_OWNER_PASSWORD` | none | Password for the demo owner (at least 8 characters); without it, a random one nobody knows |
+| `hireme.demo-listings.enabled` | `HIREME_DEMO_LISTINGS` | `false`     | Portfolio mode. See the demo data notes below |
+| `hireme.demo-listings.owner-password` | `HIREME_DEMO_OWNER_PASSWORD` | none | Optional password for the demo owner (at least 8 characters). The one-click sign-in doesn't need it; without one, the owner gets a random password |
+
+Demo data (`HIREME_DEMO_LISTINGS=true`), checked on every start:
+
+- **Demo owner:** a demo owner (`demo-owner@hireme.example`) with 15 listings across all categories and towns. Any demo listing that's missing is added back; the ones still there are left as they are.
+- **Demo client:** Wanjiku Kamau (`demo-client@hireme.example`), with booking requests on the demo listings dated from today: three pending and two confirmed. When she has no open booking left, a fresh set is made. Nobody can sign in as her.
+- **One-click sign-in:** the demo owner can be signed into from the login page (`POST /api/v1/auth/demo-owner`).
 
 Config files:
 
