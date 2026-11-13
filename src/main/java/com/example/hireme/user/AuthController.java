@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,5 +38,21 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Wrong email or password")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @GetMapping("/demo")
+    @Operation(operationId = "getDemoStatus", summary = "Whether the demo owner is available on this server")
+    public ResponseEntity<DemoStatusResponse> demoStatus() {
+        return ResponseEntity.ok(authService.demoStatus());
+    }
+
+    @PostMapping("/demo-owner")
+    @Operation(operationId = "loginAsDemoOwner", summary = "Sign in as the demo owner, without a password",
+            description = "Only on deployments seeded with demo data (`hireme.demo-listings.enabled=true`), "
+                    + "so visitors can try the owner side in one click.")
+    @ApiResponse(responseCode = "200", description = "Signed in as the demo owner")
+    @ApiResponse(responseCode = "404", description = "This server has no demo data")
+    public ResponseEntity<AuthResponse> demoOwnerLogin() {
+        return ResponseEntity.ok(authService.demoOwnerLogin());
     }
 }
