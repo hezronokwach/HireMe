@@ -35,6 +35,13 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      # A demo owner with 15 listings, added once on the first start, so new users have something to
+      # browse. Set to "false" when real owners have listed their equipment.
+      - key: HIREME_DEMO_LISTINGS
+        value: "true"
+      # Optional: lets you log in as demo-owner@hireme.example to see the bookings on the demo listings.
+      - key: HIREME_DEMO_OWNER_PASSWORD
+        sync: false
       - key: SPRING_JPA_SHOW_SQL
         value: "false"
       # A few connections are plenty for one instance and stay well inside Neon's free limits.
