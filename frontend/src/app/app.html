@@ -1,11 +1,11 @@
 <mat-toolbar class="header">
   <a class="brand" routerLink="/">HireMe</a>
-  @if (auth.isLoggedIn()) {
-    <nav class="nav">
-      <a mat-button routerLink="/equipment" routerLinkActive="active">
-        <mat-icon>search</mat-icon>
-        Find equipment
-      </a>
+  <nav class="nav">
+    <a mat-button routerLink="/equipment" routerLinkActive="active">
+      <mat-icon>search</mat-icon>
+      Find equipment
+    </a>
+    @if (auth.isLoggedIn()) {
       @if (auth.hasRole('CLIENT')) {
         <a mat-button routerLink="/my-bookings" routerLinkActive="active">
           <mat-icon>event_available</mat-icon>
@@ -22,8 +22,8 @@
           Bookings
         </a>
       }
-    </nav>
-  }
+    }
+  </nav>
   <span class="spacer"></span>
   @if (auth.currentSession(); as session) {
     <span class="user" data-testid="current-user">
@@ -41,10 +41,13 @@
       Log out
     </button>
   } @else {
-    <a mat-button routerLink="/login">Log in</a>
-    <a mat-flat-button routerLink="/register">Create account</a>
+    <a mat-flat-button routerLink="/login">Log in</a>
   }
 </mat-toolbar>
+
+@if (auth.isDemoOwner()) {
+  <app-demo-guide />
+}
 
 <main class="content">
   <router-outlet />

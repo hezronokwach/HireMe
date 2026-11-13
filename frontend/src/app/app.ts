@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
+import { DemoGuide } from './features/demo/demo-guide';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ import { AuthService } from './core/auth/auth.service';
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
+    DemoGuide,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

@@ -1,0 +1,27 @@
+// The demo owner panel under the login form: set apart (dashed, no card), so it reads as a side door
+// for visitors rather than a second way to log in.
+.demo {
+  margin-top: 24px;
+  padding: 16px 20px;
+  border: 1px dashed var(--mat-sys-outline);
+  border-radius: 12px;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    font: var(--mat-sys-title-medium);
+  }
+
+  p {
+    margin: 0 0 12px;
+    font: var(--mat-sys-body-medium);
+  }
+
+  .note {
+    margin: 12px 0 0;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+  }
+}

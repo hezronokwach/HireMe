@@ -1,10 +1,14 @@
 import { Component, inject, input, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
+import { catchError, map, of } from 'rxjs';
+import { AuthService as AuthApi } from '../../api';
 import { errorMessage } from '../../core/api-errors';
 import { AuthService } from '../../core/auth/auth.service';
 import { safeReturnUrl } from '../return-url';
@@ -18,9 +22,10 @@ import { safeReturnUrl } from '../return-url';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatIconModule,
   ],
   templateUrl: './login.html',
-  styleUrl: '../auth-form.scss',
+  styleUrls: ['../auth-form.scss', './login.scss'],
 })
 export class Login {
   private readonly auth = inject(AuthService);
@@ -28,6 +33,18 @@ export class Login {
 
   /** Where to go after logging in (query parameter, set by the guards and the interceptor). */
   readonly returnUrl = input<string>();
+
+  /** Whether this server offers the one-click demo owner (portfolio deployments only). */
+  protected readonly demoAvailable = toSignal(
+    inject(AuthApi)
+      .getDemoStatus()
+      .pipe(
+        map((status) => !!status.ownerAvailable),
+        catchError(() => of(false)),
+      ),
+    { initialValue: false },
+  );
+  protected readonly demoSigningIn = signal(false);
 
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -49,6 +66,22 @@ export class Login {
       error: (err: unknown) => {
         this.error.set(errorMessage(err, 'Could not log in. Please try again.'));
         this.submitting.set(false);
+      },
+    });
+  }
+
+  /** Straight into the owner side, on the booking requests the demo client made. */
+  protected signInAsDemoOwner(): void {
+    if (this.demoSigningIn() || this.submitting()) {
+      return;
+    }
+    this.demoSigningIn.set(true);
+    this.error.set(null);
+    this.auth.loginAsDemoOwner().subscribe({
+      next: () => void this.router.navigateByUrl('/owner-bookings'),
+      error: (err: unknown) => {
+        this.error.set(errorMessage(err, 'The demo is not available right now.'));
+        this.demoSigningIn.set(false);
       },
     });
   }

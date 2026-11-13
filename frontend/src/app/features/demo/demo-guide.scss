@@ -1,0 +1,122 @@
+:host {
+  display: block;
+}
+
+// A paper-ticket strip across the top: tinted, with a dashed tear line under it, so it reads as a guide
+// laid over the app rather than part of the owner's own pages.
+.guide {
+  padding: 8px 16px 12px;
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+  border-bottom: 2px dashed
+    color-mix(in srgb, var(--mat-sys-on-tertiary-container) 35%, transparent);
+
+  &.collapsed {
+    padding-bottom: 8px;
+  }
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--mat-sys-title-small);
+  min-width: 0;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  max-width: 1200px;
+  margin: 8px auto 0;
+  padding: 0;
+  list-style: none;
+
+  a {
+    display: flex;
+    gap: 10px;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--mat-sys-surface) 70%, transparent);
+    color: var(--mat-sys-on-surface);
+    text-decoration: none;
+    border: 1px solid transparent;
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--mat-sys-outline);
+    }
+
+    &.current {
+      border-color: var(--mat-sys-tertiary);
+      background: var(--mat-sys-surface);
+    }
+  }
+}
+
+// Phones: the steps become a row to swipe through, so the guide doesn't push the page off the screen.
+@media (max-width: 599px) {
+  .steps {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 80%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 4px;
+
+    li {
+      scroll-snap-align: start;
+    }
+  }
+}
+
+.number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--mat-sys-tertiary);
+  color: var(--mat-sys-on-tertiary);
+  font: var(--mat-sys-label-large);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--mat-sys-body-small);
+
+  strong {
+    font: var(--mat-sys-label-large);
+  }
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  max-width: 1200px;
+  margin: 8px auto 0;
+
+  p {
+    margin: 0;
+    font: var(--mat-sys-body-small);
+  }
+}

@@ -16,6 +16,8 @@ export interface Session {
 }
 
 export const SESSION_STORAGE_KEY = 'hireme.session';
+/** The demo owner a portfolio deployment is seeded with (see DemoAccounts on the backend). */
+export const DEMO_OWNER_EMAIL = 'demo-owner@hireme.example';
 
 /**
  * Holds the JWT and who it belongs to. The session is kept in localStorage so a reload stays
@@ -33,6 +35,8 @@ export class AuthService {
   readonly currentSession = this.session.asReadonly();
   readonly isLoggedIn = computed(() => this.session() !== null);
   readonly role = computed(() => this.session()?.role ?? null);
+  /** Signed in as the seeded demo owner: the app then shows the demo guide. */
+  readonly isDemoOwner = computed(() => this.session()?.email === DEMO_OWNER_EMAIL);
 
   constructor() {
     const stored = this.read();
@@ -52,14 +56,14 @@ export class AuthService {
   }
 
   login(email: string, password: string): Observable<Session> {
-    return this.api.login({ email, password }).pipe(
-      map((response) => {
-        const session = toSession(response, email);
-        this.storage?.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-        this.start(session);
-        return session;
-      }),
-    );
+    return this.api.login({ email, password }).pipe(map((response) => this.begin(response, email)));
+  }
+
+  /** Signs in as the demo owner, without a password (only on servers seeded with demo data). */
+  loginAsDemoOwner(): Observable<Session> {
+    return this.api
+      .loginAsDemoOwner()
+      .pipe(map((response) => this.begin(response, DEMO_OWNER_EMAIL)));
   }
 
   /** Creates the account, then signs in with it. */
@@ -82,6 +86,13 @@ export class AuthService {
     this.storage?.removeItem(SESSION_STORAGE_KEY);
     this.session.set(null);
     void this.router.navigate(['/login'], returnUrl ? { queryParams: { returnUrl } } : {});
+  }
+
+  private begin(response: AuthResponse, fallbackEmail: string): Session {
+    const session = toSession(response, fallbackEmail);
+    this.storage?.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+    this.start(session);
+    return session;
   }
 
   private start(session: Session): void {

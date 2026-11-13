@@ -32,6 +32,35 @@
         </button>
       </div>
     </form>
-    <p class="switch">New to HireMe? <a routerLink="/register">Create an account</a></p>
+    <p class="switch">
+      New to HireMe?
+      <a routerLink="/register" [queryParams]="returnUrl() ? { returnUrl: returnUrl() } : {}"
+        >Create an account</a
+      >
+    </p>
   </mat-card-content>
 </mat-card>
+
+@if (demoAvailable()) {
+  <section class="demo" aria-labelledby="demo-title" data-testid="demo-owner">
+    <h2 id="demo-title">
+      <mat-icon aria-hidden="true">storefront</mat-icon>
+      See the owner side
+    </h2>
+    <p>
+      Sign in as <strong>HireMe Demo Rentals</strong>, an owner with 15 listings and booking
+      requests waiting. No password, and a short guide shows you around.
+    </p>
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="demoSigningIn() || submitting()"
+      (click)="signInAsDemoOwner()"
+    >
+      {{ demoSigningIn() ? 'Signing in…' : 'Sign in as the demo owner' }}
+    </button>
+    <p class="note">
+      To book equipment yourself, create a client account above. It takes half a minute.
+    </p>
+  </section>
+}
