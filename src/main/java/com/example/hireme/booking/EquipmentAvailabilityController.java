@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Clock;
@@ -26,8 +25,7 @@ public class EquipmentAvailabilityController {
     private final Clock clock;
 
     @GetMapping("/{equipmentId}/availability")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(operationId = "getEquipmentAvailability", summary = "Booked dates of a listing",
+    @Operation(operationId = "getEquipmentAvailability", summary = "Booked dates of a listing (no token needed)",
             description = "Confirmed or active bookings overlapping [from, to]. At most 366 days.")
     @ApiResponse(responseCode = "200", description = "Booked periods in the range")
     @ApiResponse(responseCode = "404", description = "No such equipment")

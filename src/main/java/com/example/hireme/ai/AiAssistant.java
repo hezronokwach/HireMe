@@ -13,6 +13,12 @@ package com.example.hireme.ai;
  */
 public interface AiAssistant {
 
+    /**
+     * The "user" for signed-out visitors (real ids start at 1). They all share one rate-limit budget, which
+     * is enough for a portfolio demo and stops anyone from burning the shared Groq quota without an account.
+     */
+    long GUEST_USER_ID = 0L;
+
     // false when hireme.ai.enabled=false: every call then throws AiUnavailableException
     boolean isEnabled();
 

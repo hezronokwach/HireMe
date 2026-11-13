@@ -8,6 +8,7 @@ export * from './booked-period';
 export * from './booking-response';
 export * from './create-booking-request';
 export * from './create-equipment-request';
+export * from './demo-status-response';
 export * from './describe-equipment-request';
 export * from './equipment-availability-response';
 export * from './equipment-description-response';

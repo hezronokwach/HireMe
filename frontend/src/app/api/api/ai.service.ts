@@ -56,8 +56,8 @@ export class AIService extends BaseService {
   }
 
   /**
-   * Talk with the hire assistant
-   * A conversation that finds, compares and prices listings. Send the whole conversation so far (the server keeps nothing); the last message is the user\&#39;s. The assistant reads the real listings through read-only tools. &#x60;listings&#x60; are cards built from the database, only for listings it looked up, with the price and availability for the days being discussed. It never books anything.
+   * Talk with the hire assistant (no token needed)
+   * A conversation that finds, compares and prices listings. Send the whole conversation so far (the server keeps nothing); the last message is the user\&#39;s. The assistant reads the real listings through read-only tools. &#x60;listings&#x60; are cards built from the database, only for listings it looked up, with the price and availability for the days being discussed. It never books anything. Signed-out visitors may use it too; they share one rate-limit budget.
    * @endpoint post /api/v1/equipment/ai/assistant
    * @param assistantChatRequest
    * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
@@ -276,7 +276,7 @@ export class AIService extends BaseService {
   }
 
   /**
-   * Whether AI features are on
+   * Whether AI features are on (no token needed)
    * Lets the frontend hide AI buttons when they would only return 503.
    * @endpoint get /api/v1/ai/status
    * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.

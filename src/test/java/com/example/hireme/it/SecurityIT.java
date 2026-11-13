@@ -9,8 +9,15 @@ class SecurityIT extends PostgresIntegrationTest {
 
     @Test
     void noOrBadToken_returns401() {
-        assertEquals(401, get("/api/v1/equipment", null).status());
-        assertEquals(401, get("/api/v1/equipment", "not-a-jwt").status());
+        assertEquals(401, get("/api/v1/equipment/mine", null).status());
+        assertEquals(401, get("/api/v1/equipment/mine", "not-a-jwt").status());
+    }
+
+    @Test
+    void browsing_needsNoToken() {
+        assertEquals(200, get("/api/v1/equipment", null).status());
+        assertEquals(404, get("/api/v1/equipment/999999", null).status());
+        assertEquals(200, get("/api/v1/ai/status", null).status());
     }
 
     @Test
