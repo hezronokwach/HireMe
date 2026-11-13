@@ -87,6 +87,13 @@ describe('Register', () => {
     expect(navigateByUrl).toHaveBeenCalledWith('/');
   });
 
+  it('goes back to the listing the visitor was booking, dates and all', async () => {
+    fixture.componentRef.setInput('returnUrl', '/equipment/7?from=2030-01-02&to=2030-01-03');
+    await submit(valid);
+    response.next({} as Session);
+    expect(navigateByUrl).toHaveBeenCalledWith('/equipment/7?from=2030-01-02&to=2030-01-03');
+  });
+
   it('shows field errors from the backend next to the fields', async () => {
     await submit(valid);
     response.error(

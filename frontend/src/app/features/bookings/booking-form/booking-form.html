@@ -30,13 +30,24 @@
     <p class="problem" role="alert" data-testid="booking-error">{{ error() }}</p>
   }
 
-  <button
-    mat-flat-button
-    type="submit"
-    [disabled]="submitting() || !form.controls.start.value || form.invalid"
-    data-testid="book"
-  >
-    {{ submitting() ? 'Sending…' : 'Request booking' }}
-  </button>
-  <p class="hint">The owner confirms or declines your request; you can follow it in My bookings.</p>
+  @if (guest()) {
+    <button mat-flat-button type="submit" [disabled]="form.invalid" data-testid="book">
+      Sign in to book
+    </button>
+    <p class="hint">
+      Looking is free. You only need an account to send the request, and your dates come with you.
+    </p>
+  } @else {
+    <button
+      mat-flat-button
+      type="submit"
+      [disabled]="submitting() || !form.controls.start.value || form.invalid"
+      data-testid="book"
+    >
+      {{ submitting() ? 'Sending…' : 'Request booking' }}
+    </button>
+    <p class="hint">
+      The owner confirms or declines your request; you can follow it in My bookings.
+    </p>
+  }
 </form>

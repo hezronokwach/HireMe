@@ -76,6 +76,11 @@ export class BookingForm implements OnInit {
   /** Days to start with (ISO), e.g. the ones the assistant priced. Past or invalid days are ignored. */
   readonly initialFrom = input<string | undefined>();
   readonly initialTo = input<string | undefined>();
+  /**
+   * A signed-out visitor: they can pick dates and see the total, and the button takes them to sign in
+   * (or create an account) and back here with the same dates, instead of sending the request.
+   */
+  readonly guest = input(false);
 
   protected readonly today = startOfToday();
   protected readonly formatKes = formatKes;
@@ -120,6 +125,10 @@ export class BookingForm implements OnInit {
 
   protected submit(): void {
     const { start, end } = this.form.getRawValue();
+    if (this.guest()) {
+      this.signInToBook(start, end);
+      return;
+    }
     if (!start || this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
       return;
@@ -148,5 +157,15 @@ export class BookingForm implements OnInit {
           this.submitting.set(false);
         },
       });
+  }
+
+  /** To the login page, which comes back to this listing with the dates already picked. */
+  private signInToBook(start: Date | null, end: Date | null): void {
+    const tree = this.router.createUrlTree(['/equipment', this.equipment().id], {
+      queryParams: start ? { from: toIsoDay(start), to: toIsoDay(end ?? start) } : {},
+    });
+    void this.router.navigate(['/login'], {
+      queryParams: { returnUrl: this.router.serializeUrl(tree) },
+    });
   }
 }

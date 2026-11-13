@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
 import {
   AbstractControl,
   NonNullableFormBuilder,
@@ -15,6 +15,7 @@ import { Router, RouterLink } from '@angular/router';
 import { RegisterRequestRoleEnum } from '../../api';
 import { errorMessage, fieldErrors } from '../../core/api-errors';
 import { AuthService } from '../../core/auth/auth.service';
+import { safeReturnUrl } from '../return-url';
 
 /** Same rule as the backend: +2547XXXXXXXX or 07XXXXXXXX. */
 export const KENYAN_PHONE = /^(?:\+254|0)7\d{8}$/;
@@ -48,6 +49,9 @@ type Field = 'fullName' | 'email' | 'phoneNumber' | 'password';
 export class Register {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+
+  /** Where to go once the account exists, e.g. the listing the visitor was about to book. */
+  readonly returnUrl = input<string>();
 
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -85,7 +89,7 @@ export class Register {
         role: value.role,
       })
       .subscribe({
-        next: () => void this.router.navigateByUrl('/'),
+        next: () => void this.router.navigateByUrl(safeReturnUrl(this.returnUrl())),
         error: (err: unknown) => {
           const fields = fieldErrors(err);
           this.serverErrors.set(fields);

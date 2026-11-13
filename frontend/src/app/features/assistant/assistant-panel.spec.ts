@@ -11,7 +11,8 @@ const URL = '/api/v1/equipment/ai/assistant';
 describe('AssistantPanel', () => {
   let fixture: ComponentFixture<AssistantPanel>;
   let http: HttpTestingController;
-  let role: Role;
+  /** null: a signed-out visitor. */
+  let role: Role | null;
 
   beforeEach(async () => {
     sessionStorage.clear();
@@ -23,7 +24,13 @@ describe('AssistantPanel', () => {
         provideHttpClientTesting(),
         provideApi(''),
         provideRouter([]),
-        { provide: AuthService, useValue: { hasRole: (...roles: Role[]) => roles.includes(role) } },
+        {
+          provide: AuthService,
+          useValue: {
+            hasRole: (...roles: Role[]) => role !== null && roles.includes(role),
+            isLoggedIn: () => role !== null,
+          },
+        },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -125,6 +132,15 @@ describe('AssistantPanel', () => {
     await settle();
 
     expect(el().querySelector('[data-testid="book-these-dates"]')).toBeNull();
+  });
+
+  it('signed-out visitors get the booking hand-off too (the listing asks them to sign in)', async () => {
+    role = null;
+    el().querySelector<HTMLButtonElement>('.suggestions button')!.click();
+    http.expectOne(URL).flush(answer);
+    await settle();
+
+    expect(el().querySelector('[data-testid="book-these-dates"]')).not.toBeNull();
   });
 
   it('Enter sends what was typed; Shift+Enter does not', async () => {

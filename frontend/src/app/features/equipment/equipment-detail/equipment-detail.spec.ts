@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApi } from '../../../api';
 import { AuthService, Role } from '../../../core/auth/auth.service';
@@ -10,7 +10,8 @@ import { AVAILABILITY_DAYS, EquipmentDetail, backToListUrl } from './equipment-d
 
 describe('EquipmentDetail', () => {
   let http: HttpTestingController;
-  let role: Role;
+  /** null: a signed-out visitor. */
+  let role: Role | null;
 
   beforeEach(() => {
     role = 'CLIENT';
@@ -23,7 +24,13 @@ describe('EquipmentDetail', () => {
           [{ path: 'equipment/:id', component: EquipmentDetail }],
           withComponentInputBinding(),
         ),
-        { provide: AuthService, useValue: { hasRole: (...roles: Role[]) => roles.includes(role) } },
+        {
+          provide: AuthService,
+          useValue: {
+            hasRole: (...roles: Role[]) => role !== null && roles.includes(role),
+            isLoggedIn: () => role !== null,
+          },
+        },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -90,6 +97,37 @@ describe('EquipmentDetail', () => {
     respond();
     await harness.fixture.whenStable();
     expect(el.querySelector('[data-testid="book"]')).toBeNull();
+  });
+
+  it('tells owners that clients book here', async () => {
+    role = 'OWNER';
+    const { el, harness } = await open('7');
+    respond();
+    await harness.fixture.whenStable();
+    expect(el.querySelector('[data-testid="owner-hint"]')?.textContent).toContain(
+      "You're signed in as an owner",
+    );
+  });
+
+  it('lets a signed-out visitor pick dates, then sends them to sign in with those dates', async () => {
+    role = null;
+    const from = toIsoDay(addDays(startOfToday(), 3));
+    const to = toIsoDay(addDays(startOfToday(), 4));
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(`/equipment/7?from=${from}&to=${to}`, EquipmentDetail);
+    respond();
+    await harness.fixture.whenStable();
+    const el = harness.routeNativeElement as HTMLElement;
+    const book = el.querySelector<HTMLButtonElement>('[data-testid="book"]')!;
+    expect(book.textContent).toContain('Sign in to book');
+    expect(el.querySelector('[data-testid="quote"]')?.textContent).toMatch(/2 days/);
+
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    book.click();
+
+    expect(navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { returnUrl: `/equipment/7?from=${from}&to=${to}` },
+    });
   });
 
   it('explains when a listing is under maintenance', async () => {
