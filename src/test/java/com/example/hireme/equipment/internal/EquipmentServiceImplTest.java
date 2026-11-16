@@ -45,6 +45,9 @@ class EquipmentServiceImplTest {
     @Mock
     private EquipmentBookingChecker equipmentBookingChecker;
 
+    @Mock
+    private EquipmentPhotoService photoService;
+
     @InjectMocks
     private EquipmentServiceImpl equipmentService;
 
@@ -104,6 +107,20 @@ class EquipmentServiceImplTest {
         EquipmentResponse result = equipmentService.getById(1L);
 
         assertEquals("Excavator", result.name());
+    }
+
+    @Test
+    void getById_carriesThePhotoUrlsCoverFirst() {
+        EquipmentEntity entity = createEntity(EquipmentStatus.AVAILABLE);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(equipmentMapper.toCreateResponse(entity)).thenReturn(equipmentResponse(EquipmentStatus.AVAILABLE));
+        when(photoService.urlsFor(java.util.List.of(1L))).thenReturn(java.util.Map.of(1L,
+                java.util.List.of("/api/v1/equipment/1/photos/9", "/api/v1/equipment/1/photos/8")));
+
+        EquipmentResponse result = equipmentService.getById(1L);
+
+        assertEquals(java.util.List.of("/api/v1/equipment/1/photos/9", "/api/v1/equipment/1/photos/8"),
+                result.photoUrls());
     }
 
     @Test

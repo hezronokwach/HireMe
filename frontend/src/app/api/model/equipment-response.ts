@@ -19,6 +19,7 @@ export interface EquipmentResponse {
   equipmentStatus?: EquipmentResponseEquipmentStatusEnum;
   createdAt?: string;
   updatedAt?: string;
+  photoUrls?: Array<string>;
 }
 export enum EquipmentResponseCategoryEnum {
   HEAVY_MACHINERY = 'HEAVY_MACHINERY',
