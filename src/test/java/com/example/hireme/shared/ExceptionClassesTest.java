@@ -66,9 +66,14 @@ class ExceptionClassesTest {
 
     @Test
     void userAlreadyExistsException_setsMessageAndStatus() {
-        UserAlreadyExistsException ex = new UserAlreadyExistsException("john@test.com");
-        assertEquals("User with email john@test.com already exists", ex.getMessage());
-        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        UserAlreadyExistsException email = UserAlreadyExistsException.email();
+        assertEquals("This email is already registered. Log in instead.", email.getMessage());
+        assertEquals(HttpStatus.CONFLICT, email.getStatus());
+        assertEquals(java.util.Map.of("email", email.getMessage()), email.getErrors());
+
+        UserAlreadyExistsException phone = UserAlreadyExistsException.phoneNumber();
+        assertEquals(HttpStatus.CONFLICT, phone.getStatus());
+        assertTrue(phone.getErrors().get("phoneNumber").startsWith("This phone number is already registered"));
     }
 
     @Test

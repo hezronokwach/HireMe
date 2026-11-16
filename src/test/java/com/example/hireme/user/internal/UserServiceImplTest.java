@@ -65,6 +65,39 @@ class UserServiceImplTest {
     }
 
     @Test
+    void register_duplicateEmail_namesTheEmailField() {
+        RegisterRequest request = new RegisterRequest("John", "john@test.com", "0712345678", "password123", Role.CLIENT);
+        when(userRepository.existsByEmail("john@test.com")).thenReturn(true);
+
+        UserAlreadyExistsException e = assertThrows(UserAlreadyExistsException.class, () -> userService.register(request));
+
+        assertEquals("This email is already registered. Log in instead.", e.getErrors().get("email"));
+        verify(userRepository, never()).existsByPhoneNumberIn(any());
+    }
+
+    @Test
+    void register_phoneAlreadyUsedInTheOtherForm_isRefusedOnThePhoneField() {
+        // Registered as 0712345678; signing up again as +254712345678 is the same number.
+        RegisterRequest request = new RegisterRequest("John", "new@test.com", "+254712345678", "password123", Role.CLIENT);
+        when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
+        when(userRepository.existsByPhoneNumberIn(List.of("+254712345678", "0712345678"))).thenReturn(true);
+
+        UserAlreadyExistsException e = assertThrows(UserAlreadyExistsException.class, () -> userService.register(request));
+
+        assertTrue(e.getErrors().containsKey("phoneNumber"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void phoneForms_coverBothWaysOfWritingAKenyanNumber() {
+        assertEquals(List.of("0712345678", "+254712345678"), UserServiceImpl.phoneForms("0712345678"));
+        assertEquals(List.of("+254712345678", "0712345678"), UserServiceImpl.phoneForms(" +254712345678 "));
+        // Anything else is checked as it is (validation refuses other formats anyway).
+        assertEquals(List.of("712345678"), UserServiceImpl.phoneForms("712345678"));
+        assertEquals(List.of(""), UserServiceImpl.phoneForms(null));
+    }
+
+    @Test
     void isOwner_ownerRole_returnsTrue() {
         User user = new User();
         user.setRole(Role.OWNER);

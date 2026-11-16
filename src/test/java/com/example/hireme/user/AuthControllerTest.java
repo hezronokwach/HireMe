@@ -42,7 +42,7 @@ class AuthControllerTest {
     @Test
     void register_duplicateEmail_throwsException() {
         RegisterRequest request = new RegisterRequest("John", "john@test.com", "+254712345678", "password123", Role.CLIENT);
-        when(userService.register(request)).thenThrow(new UserAlreadyExistsException("john@test.com"));
+        when(userService.register(request)).thenThrow(UserAlreadyExistsException.email());
 
         assertThrows(UserAlreadyExistsException.class, () -> authController.register(request));
     }

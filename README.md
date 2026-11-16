@@ -296,7 +296,7 @@ Response (`UserResponse`):
 }
 ```
 
-Returns `409` if the email is already registered and `400` on validation errors.
+Returns `409` if the email or the phone number is already registered, with the field named in `errors` (for example `{"phoneNumber": "This phone number is already registered. ..."}`), so the form can show it in the right place. `07...` and `+2547...` count as the same number. Returns `400` on validation errors.
 
 #### Demo owner: `GET /auth/demo` and `POST /auth/demo-owner`
 

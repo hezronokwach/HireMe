@@ -94,6 +94,33 @@ describe('Register', () => {
     expect(navigateByUrl).toHaveBeenCalledWith('/equipment/7?from=2030-01-02&to=2030-01-03');
   });
 
+  it('shows a taken phone number next to the phone field', async () => {
+    await submit(valid);
+    response.error(
+      new HttpErrorResponse({
+        status: 409,
+        error: {
+          status: 409,
+          message:
+            'This phone number is already registered. Log in instead, or use another number.',
+          errors: {
+            phoneNumber:
+              'This phone number is already registered. Log in instead, or use another number.',
+          },
+        },
+      }),
+    );
+    await fixture.whenStable();
+
+    const phoneField = el()
+      .querySelector('input[formControlName="phoneNumber"]')!
+      .closest('mat-form-field')!;
+    expect(phoneField.textContent).toContain('This phone number is already registered');
+    expect(el().querySelector('[role="alert"]')?.textContent).toContain(
+      'Please fix the highlighted fields.',
+    );
+  });
+
   it('shows field errors from the backend next to the fields', async () => {
     await submit(valid);
     response.error(

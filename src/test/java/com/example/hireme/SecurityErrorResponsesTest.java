@@ -113,6 +113,24 @@ class SecurityErrorResponsesTest {
         assertFalse(jsonMapper.readTree(send(get("/api/v1/auth/demo", null)).body()).get("ownerAvailable").asBoolean());
     }
 
+    @Test
+    void signingUpWithATakenPhoneNumber_is409OnThePhoneField_inEitherForm() throws Exception {
+        String phone = "07" + String.format("%08d", java.util.concurrent.ThreadLocalRandom.current().nextInt(100_000_000));
+        String international = "+254" + phone.substring(1);
+        assertEquals(201, send(post("/api/v1/auth/register", null, """
+                {"fullName":"Phone One %s","email":"phone-one-%s@example.com","phoneNumber":"%s","password":"secret123","role":"CLIENT"}"""
+                .formatted(phone, phone, phone))).statusCode());
+
+        HttpResponse<String> again = send(post("/api/v1/auth/register", null, """
+                {"fullName":"Phone Two %s","email":"phone-two-%s@example.com","phoneNumber":"%s","password":"secret123","role":"CLIENT"}"""
+                .formatted(phone, phone, international)));
+
+        assertEquals(409, again.statusCode(), again.body());
+        var body = jsonMapper.readTree(again.body());
+        assertTrue(body.get("errors").get("phoneNumber").asString().startsWith("This phone number is already registered"));
+        assertFalse(again.body().contains("SQL"), "no database details in the response");
+    }
+
     private String login() throws Exception {
         HttpResponse<String> response = send(post("/api/v1/auth/login", null,
                 "{\"email\":\"security-test@example.com\",\"password\":\"secret123\"}"));
