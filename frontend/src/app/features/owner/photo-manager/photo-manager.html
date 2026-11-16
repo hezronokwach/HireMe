@@ -1,0 +1,74 @@
+<section class="photos" aria-labelledby="photos-title">
+  <div class="head">
+    <h2 id="photos-title">
+      <mat-icon aria-hidden="true">photo_library</mat-icon>
+      Photos
+    </h2>
+    <span class="count">{{ photos().length }} / {{ max }}</span>
+  </div>
+  <p class="hint">
+    The first photo is the cover on cards. Clear, well-lit photos get more bookings.
+    @if (equipmentId() !== undefined) {
+      Changes to photos are saved straight away.
+    }
+  </p>
+
+  <ul class="grid">
+    @for (photo of photos(); track photo.src; let i = $index) {
+      <li class="tile" [class.uploading]="photo.uploading" data-testid="photo">
+        <img [src]="photo.src" [alt]="'Photo ' + (i + 1)" loading="lazy" />
+        @if (i === 0) {
+          <span class="cover-badge">Cover</span>
+        }
+        @if (photo.uploading) {
+          <mat-progress-bar mode="indeterminate" aria-label="Uploading" />
+        } @else {
+          <div class="tile-actions">
+            @if (i > 0) {
+              <button
+                type="button"
+                class="tile-button"
+                (click)="makeCover(i)"
+                [attr.aria-label]="'Make photo ' + (i + 1) + ' the cover'"
+                title="Make cover"
+              >
+                <mat-icon>star</mat-icon>
+              </button>
+            }
+            <button
+              type="button"
+              class="tile-button danger"
+              (click)="remove(i)"
+              [attr.aria-label]="'Remove photo ' + (i + 1)"
+              title="Remove"
+              data-testid="remove-photo"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        }
+      </li>
+    }
+    @if (!full()) {
+      <li>
+        <label class="add" [class.disabled]="busy()">
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            [disabled]="busy()"
+            (change)="pick($event)"
+            data-testid="photo-input"
+          />
+          <mat-icon aria-hidden="true">add_a_photo</mat-icon>
+          <span>{{ photos().length ? 'Add more' : 'Add photos' }}</span>
+          <small>JPEG, PNG or WebP</small>
+        </label>
+      </li>
+    }
+  </ul>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+</section>

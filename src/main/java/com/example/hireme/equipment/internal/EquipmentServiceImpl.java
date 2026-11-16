@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -34,6 +35,7 @@ public class EquipmentServiceImpl implements EquipmentService {
     private final UserService userService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final EquipmentBookingChecker equipmentBookingChecker;
+    private final EquipmentPhotoService photoService;
 
     @Override
     @Transactional
@@ -50,7 +52,7 @@ public class EquipmentServiceImpl implements EquipmentService {
     public EquipmentResponse getById(Long equipmentId) {
         EquipmentEntity equipmentEntity = equipmentRepository.findById(equipmentId)
                 .orElseThrow(EquipmentNotFoundException::new);
-        return equipmentMapper.toCreateResponse(equipmentEntity);
+        return withPhotos(equipmentMapper.toCreateResponse(equipmentEntity));
     }
 
     @Override
@@ -60,9 +62,9 @@ public class EquipmentServiceImpl implements EquipmentService {
         Set<Long> booked = withDates.hasDates()
                 ? equipmentBookingChecker.findBookedEquipmentIds(withDates.availableFrom(), withDates.availableTo())
                 : Set.of();
-        return PageResponse.from(
+        return withPhotos(PageResponse.from(
                 equipmentRepository.findAll(EquipmentSpecifications.matching(withDates, booked), pageable),
-                equipmentMapper::toCreateResponse);
+                equipmentMapper::toCreateResponse));
     }
 
     // A single date means that one day. The range may not run backwards or be longer than a year.
@@ -113,7 +115,7 @@ public class EquipmentServiceImpl implements EquipmentService {
                             Instant.now())
             );
         }
-        return equipmentMapper.toCreateResponse(equipmentEntitySaved);
+        return withPhotos(equipmentMapper.toCreateResponse(equipmentEntitySaved));
     }
 
     @Override
@@ -130,13 +132,33 @@ public class EquipmentServiceImpl implements EquipmentService {
         equipmentRepository.delete(equipmentEntity);
     }
 
+    // Each listing with its photo URLs: one query for the whole page, and never the pictures themselves.
+    private PageResponse<EquipmentResponse> withPhotos(PageResponse<EquipmentResponse> page) {
+        List<Long> ids = page.content().stream().filter(Objects::nonNull).map(EquipmentResponse::id).toList();
+        Map<Long, List<String>> urls = photoService.urlsFor(ids);
+        if (urls.isEmpty()) {
+            return page;
+        }
+        return new PageResponse<>(page.content().stream()
+                .map(e -> e == null ? null : e.withPhotos(urls.getOrDefault(e.id(), List.of())))
+                .toList(), page.page(), page.size(), page.totalElements(), page.totalPages());
+    }
+
+    private EquipmentResponse withPhotos(EquipmentResponse response) {
+        if (response == null || response.id() == null) {
+            return response;
+        }
+        List<String> urls = photoService.urlsFor(List.of(response.id())).get(response.id());
+        return urls == null ? response : response.withPhotos(urls);
+    }
+
     private boolean canManage(EquipmentEntity equipmentEntity, Long currentUserId) {
         return Objects.equals(equipmentEntity.getOwnerId(), currentUserId) || userService.isAdmin(currentUserId);
     }
 
     @Override
     public PageResponse<EquipmentResponse> getByOwner(Long ownerId, Pageable pageable) {
-        return PageResponse.from(equipmentRepository.findByOwnerId(ownerId, pageable), equipmentMapper::toCreateResponse);
+        return withPhotos(PageResponse.from(equipmentRepository.findByOwnerId(ownerId, pageable), equipmentMapper::toCreateResponse));
     }
 
     @Override

@@ -92,3 +92,19 @@ mat-icon {
 :host(.tone-plain) {
   --tile: linear-gradient(160deg, #fffaf0 0%, #f6efdf 100%);
 }
+
+// With a photo: the photo fills the tile; the drawn light and shadow are for the icon only.
+:host(.has-photo) {
+  &::before,
+  &::after {
+    display: none;
+  }
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}

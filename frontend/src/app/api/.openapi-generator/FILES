@@ -31,6 +31,7 @@ model/message.ts
 model/models.ts
 model/page-response-booking-response.ts
 model/page-response-equipment-response.ts
+model/photo-response.ts
 model/quote.ts
 model/register-request.ts
 model/update-equipment-request.ts

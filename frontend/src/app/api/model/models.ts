@@ -20,6 +20,7 @@ export * from './login-request';
 export * from './message';
 export * from './page-response-booking-response';
 export * from './page-response-equipment-response';
+export * from './photo-response';
 export * from './quote';
 export * from './register-request';
 export * from './update-equipment-request';

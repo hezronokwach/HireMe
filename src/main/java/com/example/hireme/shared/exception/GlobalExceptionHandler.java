@@ -10,6 +10,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -52,6 +54,30 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
             400,
             "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "'",
+            Instant.now(),
+            null
+        );
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    // A file bigger than spring.servlet.multipart.max-file-size, e.g. an unshrunk photo.
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        ErrorResponse response = new ErrorResponse(
+            413,
+            "That file is too large. Photos can be at most 2 MB.",
+            Instant.now(),
+            null
+        );
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(response);
+    }
+
+    // A multipart request without the expected part, e.g. no "file".
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPart(MissingServletRequestPartException ex) {
+        ErrorResponse response = new ErrorResponse(
+            400,
+            "Missing '" + ex.getRequestPartName() + "' in the upload",
             Instant.now(),
             null
         );

@@ -218,7 +218,11 @@
                     [state]="{ from: router.url }"
                   >
                     <div class="visual-wrap">
-                      <app-equipment-visual [name]="item.name" [category]="item.category" />
+                      <app-equipment-visual
+                        [name]="item.name"
+                        [category]="item.category"
+                        [photo]="item.photoUrls?.[0]"
+                      />
                       <span class="tag">
                         <mat-icon aria-hidden="true">{{ categoryIcon(item.category) }}</mat-icon>
                         {{ categoryLabel(item.category) }}

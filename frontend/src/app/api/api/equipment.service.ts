@@ -32,6 +32,8 @@ import { ErrorResponse } from '../model/error-response';
 // @ts-ignore
 import { PageResponseEquipmentResponse } from '../model/page-response-equipment-response';
 // @ts-ignore
+import { PhotoResponse } from '../model/photo-response';
+// @ts-ignore
 import { UpdateEquipmentRequest } from '../model/update-equipment-request';
 
 // @ts-ignore
@@ -243,6 +245,114 @@ export class EquipmentService extends BaseService {
     }
 
     let localVarPath = `/api/v1/equipment/${this.configuration.encodeParam({ name: 'id', value: id, in: 'path', style: 'simple', explode: false, dataType: 'number', dataFormat: 'int64' })}`;
+    const { basePath, withCredentials } = this.configuration;
+    return this.httpClient.request<any>('delete', `${basePath}${localVarPath}`, {
+      context: localVarHttpContext,
+      responseType: <any>responseType_,
+      ...(withCredentials ? { withCredentials } : {}),
+      headers: localVarHeaders,
+      observe: observe,
+      ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+      reportProgress: reportProgress,
+    });
+  }
+
+  /**
+   * Remove a photo from a listing you own (OWNER, ADMIN)
+   * @endpoint delete /api/v1/equipment/{equipmentId}/photos/{photoId}
+   * @param equipmentId
+   * @param photoId
+   * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+   * @param reportProgress flag to report request and response progress.
+   * @param options additional options
+   */
+  public deleteEquipmentPhoto(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'body',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<any>;
+  public deleteEquipmentPhoto(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'response',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<HttpResponse<any>>;
+  public deleteEquipmentPhoto(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'events',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<HttpEvent<any>>;
+  public deleteEquipmentPhoto(
+    equipmentId: number,
+    photoId: number,
+    observe: any = 'body',
+    reportProgress: boolean = false,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<any> {
+    if (equipmentId === null || equipmentId === undefined) {
+      throw new Error(
+        'Required parameter equipmentId was null or undefined when calling deleteEquipmentPhoto.',
+      );
+    }
+    if (photoId === null || photoId === undefined) {
+      throw new Error(
+        'Required parameter photoId was null or undefined when calling deleteEquipmentPhoto.',
+      );
+    }
+
+    let localVarHeaders = this.defaultHeaders;
+
+    // authentication (bearerAuth) required
+    localVarHeaders = this.configuration.addCredentialToHeaders(
+      'bearerAuth',
+      'Authorization',
+      localVarHeaders,
+      'Bearer ',
+    );
+
+    const localVarHttpHeaderAcceptSelected: string | undefined =
+      options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept(['application/json']);
+    if (localVarHttpHeaderAcceptSelected !== undefined) {
+      localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+    }
+
+    const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+    const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+    let responseType_: 'text' | 'json' | 'blob' = 'json';
+    if (localVarHttpHeaderAcceptSelected) {
+      if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+        responseType_ = 'text';
+      } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+        responseType_ = 'json';
+      } else {
+        responseType_ = 'blob';
+      }
+    }
+
+    let localVarPath = `/api/v1/equipment/${this.configuration.encodeParam({ name: 'equipmentId', value: equipmentId, in: 'path', style: 'simple', explode: false, dataType: 'number', dataFormat: 'int64' })}/photos/${this.configuration.encodeParam({ name: 'photoId', value: photoId, in: 'path', style: 'simple', explode: false, dataType: 'number', dataFormat: 'int64' })}`;
     const { basePath, withCredentials } = this.configuration;
     return this.httpClient.request<any>('delete', `${basePath}${localVarPath}`, {
       context: localVarHttpContext,
@@ -484,6 +594,106 @@ export class EquipmentService extends BaseService {
   }
 
   /**
+   * A listing\&#39;s photo (the image itself; no token needed)
+   * @endpoint get /api/v1/equipment/{equipmentId}/photos/{photoId}
+   * @param equipmentId
+   * @param photoId
+   * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+   * @param reportProgress flag to report request and response progress.
+   * @param options additional options
+   */
+  public getEquipmentPhoto(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'body',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<string>;
+  public getEquipmentPhoto(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'response',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<HttpResponse<string>>;
+  public getEquipmentPhoto(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'events',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<HttpEvent<string>>;
+  public getEquipmentPhoto(
+    equipmentId: number,
+    photoId: number,
+    observe: any = 'body',
+    reportProgress: boolean = false,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<any> {
+    if (equipmentId === null || equipmentId === undefined) {
+      throw new Error(
+        'Required parameter equipmentId was null or undefined when calling getEquipmentPhoto.',
+      );
+    }
+    if (photoId === null || photoId === undefined) {
+      throw new Error(
+        'Required parameter photoId was null or undefined when calling getEquipmentPhoto.',
+      );
+    }
+
+    let localVarHeaders = this.defaultHeaders;
+
+    const localVarHttpHeaderAcceptSelected: string | undefined =
+      options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept(['application/json']);
+    if (localVarHttpHeaderAcceptSelected !== undefined) {
+      localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+    }
+
+    const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+    const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+    let responseType_: 'text' | 'json' | 'blob' = 'json';
+    if (localVarHttpHeaderAcceptSelected) {
+      if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+        responseType_ = 'text';
+      } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+        responseType_ = 'json';
+      } else {
+        responseType_ = 'blob';
+      }
+    }
+
+    let localVarPath = `/api/v1/equipment/${this.configuration.encodeParam({ name: 'equipmentId', value: equipmentId, in: 'path', style: 'simple', explode: false, dataType: 'number', dataFormat: 'int64' })}/photos/${this.configuration.encodeParam({ name: 'photoId', value: photoId, in: 'path', style: 'simple', explode: false, dataType: 'number', dataFormat: 'int64' })}`;
+    const { basePath, withCredentials } = this.configuration;
+    return this.httpClient.request<string>('get', `${basePath}${localVarPath}`, {
+      context: localVarHttpContext,
+      responseType: <any>responseType_,
+      ...(withCredentials ? { withCredentials } : {}),
+      headers: localVarHeaders,
+      observe: observe,
+      ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+      reportProgress: reportProgress,
+    });
+  }
+
+  /**
    * The caller\&#39;s own listings, one page at a time (OWNER, ADMIN)
    * Every listing the caller owns, including those under maintenance.
    * @endpoint get /api/v1/equipment/mine
@@ -615,6 +825,114 @@ export class EquipmentService extends BaseService {
         reportProgress: reportProgress,
       },
     );
+  }
+
+  /**
+   * Make a photo the listing\&#39;s cover (OWNER, ADMIN)
+   * @endpoint put /api/v1/equipment/{equipmentId}/photos/{photoId}/cover
+   * @param equipmentId
+   * @param photoId
+   * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+   * @param reportProgress flag to report request and response progress.
+   * @param options additional options
+   */
+  public makeEquipmentPhotoCover(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'body',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<any>;
+  public makeEquipmentPhotoCover(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'response',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<HttpResponse<any>>;
+  public makeEquipmentPhotoCover(
+    equipmentId: number,
+    photoId: number,
+    observe?: 'events',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<HttpEvent<any>>;
+  public makeEquipmentPhotoCover(
+    equipmentId: number,
+    photoId: number,
+    observe: any = 'body',
+    reportProgress: boolean = false,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<any> {
+    if (equipmentId === null || equipmentId === undefined) {
+      throw new Error(
+        'Required parameter equipmentId was null or undefined when calling makeEquipmentPhotoCover.',
+      );
+    }
+    if (photoId === null || photoId === undefined) {
+      throw new Error(
+        'Required parameter photoId was null or undefined when calling makeEquipmentPhotoCover.',
+      );
+    }
+
+    let localVarHeaders = this.defaultHeaders;
+
+    // authentication (bearerAuth) required
+    localVarHeaders = this.configuration.addCredentialToHeaders(
+      'bearerAuth',
+      'Authorization',
+      localVarHeaders,
+      'Bearer ',
+    );
+
+    const localVarHttpHeaderAcceptSelected: string | undefined =
+      options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept(['application/json']);
+    if (localVarHttpHeaderAcceptSelected !== undefined) {
+      localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+    }
+
+    const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+    const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+    let responseType_: 'text' | 'json' | 'blob' = 'json';
+    if (localVarHttpHeaderAcceptSelected) {
+      if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+        responseType_ = 'text';
+      } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+        responseType_ = 'json';
+      } else {
+        responseType_ = 'blob';
+      }
+    }
+
+    let localVarPath = `/api/v1/equipment/${this.configuration.encodeParam({ name: 'equipmentId', value: equipmentId, in: 'path', style: 'simple', explode: false, dataType: 'number', dataFormat: 'int64' })}/photos/${this.configuration.encodeParam({ name: 'photoId', value: photoId, in: 'path', style: 'simple', explode: false, dataType: 'number', dataFormat: 'int64' })}/cover`;
+    const { basePath, withCredentials } = this.configuration;
+    return this.httpClient.request<any>('put', `${basePath}${localVarPath}`, {
+      context: localVarHttpContext,
+      responseType: <any>responseType_,
+      ...(withCredentials ? { withCredentials } : {}),
+      headers: localVarHeaders,
+      observe: observe,
+      ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+      reportProgress: reportProgress,
+    });
   }
 
   /**
@@ -949,6 +1267,138 @@ export class EquipmentService extends BaseService {
     return this.httpClient.request<EquipmentResponse>('put', `${basePath}${localVarPath}`, {
       context: localVarHttpContext,
       body: updateEquipmentRequest,
+      responseType: <any>responseType_,
+      ...(withCredentials ? { withCredentials } : {}),
+      headers: localVarHeaders,
+      observe: observe,
+      ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+      reportProgress: reportProgress,
+    });
+  }
+
+  /**
+   * Add a photo to a listing you own (OWNER, ADMIN)
+   * Multipart field &#x60;file&#x60;: a JPEG, PNG or WebP photo, at most 2 MB. A listing can have up to 6 photos; the first one is its cover.
+   * @endpoint post /api/v1/equipment/{equipmentId}/photos
+   * @param equipmentId
+   * @param file
+   * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+   * @param reportProgress flag to report request and response progress.
+   * @param options additional options
+   */
+  public uploadEquipmentPhoto(
+    equipmentId: number,
+    file: Blob,
+    observe?: 'body',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<PhotoResponse>;
+  public uploadEquipmentPhoto(
+    equipmentId: number,
+    file: Blob,
+    observe?: 'response',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<HttpResponse<PhotoResponse>>;
+  public uploadEquipmentPhoto(
+    equipmentId: number,
+    file: Blob,
+    observe?: 'events',
+    reportProgress?: boolean,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<HttpEvent<PhotoResponse>>;
+  public uploadEquipmentPhoto(
+    equipmentId: number,
+    file: Blob,
+    observe: any = 'body',
+    reportProgress: boolean = false,
+    options?: {
+      httpHeaderAccept?: 'application/json';
+      context?: HttpContext;
+      transferCache?: boolean;
+    },
+  ): Observable<any> {
+    if (equipmentId === null || equipmentId === undefined) {
+      throw new Error(
+        'Required parameter equipmentId was null or undefined when calling uploadEquipmentPhoto.',
+      );
+    }
+    if (file === null || file === undefined) {
+      throw new Error(
+        'Required parameter file was null or undefined when calling uploadEquipmentPhoto.',
+      );
+    }
+
+    let localVarHeaders = this.defaultHeaders;
+
+    // authentication (bearerAuth) required
+    localVarHeaders = this.configuration.addCredentialToHeaders(
+      'bearerAuth',
+      'Authorization',
+      localVarHeaders,
+      'Bearer ',
+    );
+
+    const localVarHttpHeaderAcceptSelected: string | undefined =
+      options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept(['application/json']);
+    if (localVarHttpHeaderAcceptSelected !== undefined) {
+      localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+    }
+
+    const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+    const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+    // to determine the Content-Type header
+    const consumes: string[] = ['multipart/form-data'];
+
+    const canConsumeForm = this.canConsumeForm(consumes);
+
+    let localVarFormParams: { append(param: string, value: any): any };
+    let localVarUseForm = false;
+    let localVarConvertFormParamsToString = false;
+    // use FormData to transmit files using content-type "multipart/form-data"
+    // see https://stackoverflow.com/questions/4007969/application-x-www-form-urlencoded-or-multipart-form-data
+    localVarUseForm = canConsumeForm;
+    if (localVarUseForm) {
+      localVarFormParams = new FormData();
+    } else {
+      localVarFormParams = new HttpParams({ encoder: this.encoder });
+    }
+
+    if (file !== undefined) {
+      localVarFormParams =
+        (localVarFormParams.append('file', <any>file) as any) || localVarFormParams;
+    }
+
+    let responseType_: 'text' | 'json' | 'blob' = 'json';
+    if (localVarHttpHeaderAcceptSelected) {
+      if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+        responseType_ = 'text';
+      } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+        responseType_ = 'json';
+      } else {
+        responseType_ = 'blob';
+      }
+    }
+
+    let localVarPath = `/api/v1/equipment/${this.configuration.encodeParam({ name: 'equipmentId', value: equipmentId, in: 'path', style: 'simple', explode: false, dataType: 'number', dataFormat: 'int64' })}/photos`;
+    const { basePath, withCredentials } = this.configuration;
+    return this.httpClient.request<PhotoResponse>('post', `${basePath}${localVarPath}`, {
+      context: localVarHttpContext,
+      body: localVarConvertFormParamsToString ? localVarFormParams.toString() : localVarFormParams,
       responseType: <any>responseType_,
       ...(withCredentials ? { withCredentials } : {}),
       headers: localVarHeaders,

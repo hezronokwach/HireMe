@@ -25,7 +25,12 @@
           @for (item of page.content; track item.id) {
             <li>
               <mat-card appearance="outlined" class="row">
-                <app-equipment-visual size="thumb" [name]="item.name" [category]="item.category" />
+                <app-equipment-visual
+                  size="thumb"
+                  [name]="item.name"
+                  [category]="item.category"
+                  [photo]="item.photoUrls?.[0]"
+                />
                 <div class="info">
                   <span class="category">
                     <mat-icon aria-hidden="true">{{ categoryIcon(item.category) }}</mat-icon>
