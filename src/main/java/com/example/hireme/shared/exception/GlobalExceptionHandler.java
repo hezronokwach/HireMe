@@ -58,6 +58,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
+    // Raised on commit when an entity with @Version was saved by someone else after it was read.
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(OptimisticLockingFailureException ex) {
+        ErrorResponse response = new ErrorResponse(
+            409,
+            "This record was changed by someone else at the same time. Reload it and try again.",
+            Instant.now(),
+            null
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
     // A unique column hit after the service's own checks passed, e.g. two sign-ups with the same email at
     // the same moment. Without this it was a 500 that showed the SQL to the user.
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -65,18 +77,6 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
             409,
             "This conflicts with existing data, for example an email or phone number that is already registered.",
-            Instant.now(),
-            null
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-    }
-
-    // Raised on commit when an entity with @Version was saved by someone else after it was read.
-    @ExceptionHandler(OptimisticLockingFailureException.class)
-    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(OptimisticLockingFailureException ex) {
-        ErrorResponse response = new ErrorResponse(
-            409,
-            "This record was changed by someone else at the same time. Reload it and try again.",
             Instant.now(),
             null
         );
