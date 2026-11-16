@@ -105,7 +105,8 @@ public class SecurityConfig {
                         // Browsing is open to everyone: signing in is only needed to book (or to list equipment).
                         // Numeric ids only, so /api/v1/equipment/mine stays private.
                         .requestMatchers(HttpMethod.GET, "/api/v1/equipment", "/api/v1/equipment/{id:\\d+}",
-                                "/api/v1/equipment/{id:\\d+}/availability", "/api/v1/ai/status").permitAll()
+                                "/api/v1/equipment/{id:\\d+}/availability", "/api/v1/ai/status",
+                                "/api/v1/equipment/{id:\\d+}/photos/{photoId:\\d+}").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/equipment/ai/assistant").permitAll()
                         // API docs; turn them off with springdoc.api-docs.enabled=false / springdoc.swagger-ui.enabled=false
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
