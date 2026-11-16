@@ -1,49 +1,43 @@
-<mat-toolbar class="header">
-  <a class="brand" routerLink="/">HireMe</a>
-  <nav class="nav">
-    <a mat-button routerLink="/equipment" routerLinkActive="active">
-      <mat-icon>search</mat-icon>
-      Find equipment
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" routerLink="/equipment" aria-label="HireMe, find equipment">
+      <span class="logo" aria-hidden="true">H</span>
+      <span class="brand-name">HireMe</span>
     </a>
-    @if (auth.isLoggedIn()) {
-      @if (auth.hasRole('CLIENT')) {
-        <a mat-button routerLink="/my-bookings" routerLinkActive="active">
-          <mat-icon>event_available</mat-icon>
-          My bookings
+
+    <nav class="nav" aria-label="Main">
+      @for (link of links(); track link.path) {
+        <a [routerLink]="link.path" routerLinkActive="active">
+          <mat-icon aria-hidden="true">{{ link.icon }}</mat-icon>
+          {{ link.label }}
         </a>
       }
-      @if (auth.hasRole('OWNER', 'ADMIN')) {
-        <a mat-button routerLink="/my-listings" routerLinkActive="active">
-          <mat-icon>inventory_2</mat-icon>
-          My listings
-        </a>
-        <a mat-button routerLink="/owner-bookings" routerLinkActive="active">
-          <mat-icon>event_note</mat-icon>
-          Bookings
-        </a>
+    </nav>
+
+    <div class="account">
+      @if (auth.currentSession(); as session) {
+        <span class="user" data-testid="current-user">
+          <span class="avatar" aria-hidden="true">{{ initial(session.email) }}</span>
+          <span class="who">
+            <span class="email">{{ session.email }}</span>
+            <span class="role">{{ roleLabels[session.role] }}</span>
+          </span>
+        </span>
+        <button
+          mat-icon-button
+          type="button"
+          class="logout"
+          aria-label="Log out"
+          (click)="auth.logout()"
+        >
+          <mat-icon>logout</mat-icon>
+        </button>
+      } @else {
+        <a mat-flat-button routerLink="/login" class="login">Log in</a>
       }
-    }
-  </nav>
-  <span class="spacer"></span>
-  @if (auth.currentSession(); as session) {
-    <span class="user" data-testid="current-user">
-      <span class="email">{{ session.email }}</span>
-      <span class="role">{{ roleLabels[session.role] }}</span>
-    </span>
-    <button
-      mat-stroked-button
-      type="button"
-      class="logout"
-      aria-label="Log out"
-      (click)="auth.logout()"
-    >
-      <mat-icon>logout</mat-icon>
-      Log out
-    </button>
-  } @else {
-    <a mat-flat-button routerLink="/login">Log in</a>
-  }
-</mat-toolbar>
+    </div>
+  </div>
+</header>
 
 @if (auth.isDemoOwner()) {
   <app-demo-guide />
@@ -52,3 +46,21 @@
 <main class="content">
   <router-outlet />
 </main>
+
+<!-- Phones: the same links as a floating bar at the bottom, within thumb reach. -->
+<nav class="dock" aria-label="Main">
+  @for (link of links(); track link.path) {
+    <a [routerLink]="link.path" routerLinkActive="active">
+      <span class="dock-icon"
+        ><mat-icon aria-hidden="true">{{ link.icon }}</mat-icon></span
+      >
+      <span class="dock-label">{{ link.short }}</span>
+    </a>
+  }
+  @if (!auth.isLoggedIn()) {
+    <a routerLink="/login" routerLinkActive="active">
+      <span class="dock-icon"><mat-icon aria-hidden="true">person</mat-icon></span>
+      <span class="dock-label">Log in</span>
+    </a>
+  }
+</nav>
