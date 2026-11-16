@@ -189,8 +189,27 @@ export class ListingForm {
     );
   }
 
+  /**
+   * The button is always clickable, because a disabled one doesn't say why. With the name or category
+   * missing, it says so and highlights those fields instead of calling the AI.
+   */
   protected writeForMe(): void {
+    if (this.drafting()) {
+      return;
+    }
     if (!this.canDraft()) {
+      const { name, category } = this.form.controls;
+      name.markAsTouched();
+      category.markAsTouched();
+      const missing = [
+        !name.value.trim() ? 'the name' : null,
+        !category.value ? 'a category' : null,
+      ].filter(Boolean);
+      this.draftError.set(
+        missing.length
+          ? `Add ${missing.join(' and ')} at the top first: the AI writes from those.`
+          : `Keep the name under ${LIMITS.aiName} characters and the details under ${LIMITS.notes} for the AI.`,
+      );
       return;
     }
     const v = this.form.getRawValue();
