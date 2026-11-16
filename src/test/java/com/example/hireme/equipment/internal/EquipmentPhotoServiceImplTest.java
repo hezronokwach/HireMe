@@ -170,6 +170,20 @@ class EquipmentPhotoServiceImplTest {
         verifyNoInteractions(photoRepository);
     }
 
+    @Test
+    void photo_comparesTheBytesThemselves_andKeepsThemOutOfItsStringForm() {
+        EquipmentPhotoService.Photo a = new EquipmentPhotoService.Photo("image/png", PNG.clone());
+        EquipmentPhotoService.Photo b = new EquipmentPhotoService.Photo("image/png", PNG.clone());
+
+        assertEquals(a, b);
+        assertEquals(a.hashCode(), b.hashCode());
+        assertNotEquals(a, new EquipmentPhotoService.Photo("image/png", JPEG));
+        assertNotEquals(a, new EquipmentPhotoService.Photo("image/jpeg", PNG));
+        assertNotEquals(a, "not a photo");
+        assertEquals("Photo[contentType=image/png, bytes=" + PNG.length + "]", a.toString());
+        assertEquals("Photo[contentType=null, bytes=0]", new EquipmentPhotoService.Photo(null, null).toString());
+    }
+
     private static EquipmentPhotoRepository.PhotoRef ref(Long equipmentId, Long photoId) {
         return new EquipmentPhotoRepository.PhotoRef() {
             @Override
