@@ -21,6 +21,7 @@ import {
 import { EquipmentAvailabilityResponse, EquipmentResponse, EquipmentService } from '../../../api';
 import { errorMessage } from '../../../core/api-errors';
 import { AuthService } from '../../../core/auth/auth.service';
+import { EquipmentVisual } from '../equipment-visual/equipment-visual';
 import { addDays, formatRange, fromIsoDay, startOfToday, toIsoDay } from '../../../core/dates';
 import { BookingForm } from '../../bookings/booking-form/booking-form';
 import { categoryIcon, categoryLabel, formatKes, statusLabel } from '../equipment-labels';
@@ -38,6 +39,7 @@ interface Detail {
 @Component({
   selector: 'app-equipment-detail',
   imports: [
+    EquipmentVisual,
     RouterLink,
     MatButtonModule,
     BookingForm,

@@ -1,145 +1,406 @@
 :host {
   display: block;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-// For signed-out visitors: what HireMe is, in one line, above the listings themselves.
-// Laid out like a hire docket: a thick rule on the left, facts in a row, no hero image.
-.intro {
+// ---- Hero: a big title, a short pitch for visitors, and the search bar --------------------------
+
+.hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr);
+  grid-template-areas:
+    'text search'
+    'text owner';
   align-items: end;
-  gap: 8px 24px;
-  margin: 0 0 24px;
-  padding: 4px 0 4px 16px;
-  border-left: 4px solid var(--mat-sys-primary);
+  gap: 20px 48px;
+  margin-bottom: 28px;
+}
+
+.hero-text {
+  grid-area: text;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow);
+  font: var(--mat-sys-label-large);
+  font-weight: 600;
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--hm-yellow);
+    box-shadow: 0 0 0 4px var(--hm-yellow-soft);
+  }
+}
+
+h1 .accent {
+  display: block;
+  // A highlighter stroke under the second line.
+  background: linear-gradient(
+    transparent 62%,
+    var(--hm-yellow) 62%,
+    var(--hm-yellow) 92%,
+    transparent 92%
+  );
+  width: fit-content;
+}
+
+.intro {
+  margin-top: 18px;
 }
 
 .lede {
-  grid-column: 1 / -1;
   margin: 0;
-  max-width: 60ch;
-  font: var(--mat-sys-title-large);
+  max-width: 54ch;
+  color: var(--hm-ink-soft);
+  font: var(--mat-sys-body-large);
 }
 
 .facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 20px;
-  margin: 0;
+  gap: 8px;
+  margin: 16px 0 0;
   padding: 0;
   list-style: none;
-  color: var(--mat-sys-on-surface-variant);
-  font: var(--mat-sys-body-medium);
 
   li {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    padding: 6px 12px 6px 8px;
+    border-radius: 999px;
+    background: var(--hm-yellow-wash);
+    border: 1px solid var(--hm-yellow-soft);
+    font: var(--mat-sys-label-large);
+    font-weight: 600;
   }
 
   mat-icon {
     font-size: 18px;
     width: 18px;
     height: 18px;
+  }
+}
+
+// Search: a white pill with a black "go" disc, and a square filter button beside it.
+.searchbar {
+  grid-area: search;
+  display: flex;
+  gap: 10px;
+}
+
+.search-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 60px;
+  padding: 0 6px 0 20px;
+  border-radius: 999px;
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow);
+  border: 1px solid transparent;
+  cursor: text;
+  transition: border-color 0.15s;
+
+  &:focus-within {
+    border-color: var(--hm-ink);
+  }
+
+  > mat-icon {
+    color: var(--hm-muted);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: var(--mat-sys-body-large);
+    color: var(--hm-ink);
+
+    &::placeholder {
+      color: #9b9484;
+    }
+  }
+}
+
+.go,
+.filters-toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 0;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    background 0.15s;
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--hm-yellow);
+    outline-offset: 2px;
+  }
+}
+
+.go {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--hm-ink);
+  color: var(--hm-yellow);
+}
+
+.filters-toggle {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow);
+  color: var(--hm-ink);
+
+  &.on {
+    background: var(--hm-ink);
+    color: var(--hm-yellow);
+  }
+
+  .badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--hm-yellow);
+    color: var(--hm-ink);
+    font-size: 11px;
+    font-weight: 800;
   }
 }
 
 .owner-side {
+  grid-area: owner;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 12px 12px;
+  border-radius: 20px;
+  background: var(--hm-ink);
+  color: #fff;
+  text-decoration: none;
+  transition: transform 0.15s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  > span:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.3;
+
+    span {
+      color: rgba(255, 255, 255, 0.7);
+      font: var(--mat-sys-body-small);
+    }
+  }
+
+  .owner-side-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: var(--hm-yellow);
+    color: var(--hm-ink);
+  }
+
+  .arrow {
+    color: var(--hm-yellow);
+  }
+}
+
+// ---- Categories: round icon buttons, the chosen one yellow ----------------------------------------
+
+.categories {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 4px 2px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.category {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: var(--mat-sys-primary);
-  text-decoration: none;
-  font: var(--mat-sys-body-medium);
-  white-space: nowrap;
+  gap: 10px;
+  flex: none;
+  height: 52px;
+  padding: 0 18px 0 6px;
+  border: 1px solid var(--hm-line);
+  border-radius: 999px;
+  background: var(--hm-card);
+  color: var(--hm-ink);
+  font: var(--mat-sys-label-large);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 
-  &:hover strong {
-    text-decoration: underline;
+  &:hover {
+    border-color: var(--hm-ink);
   }
 
-  mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-  }
-}
-
-@media (max-width: 599px) {
-  .intro {
-    grid-template-columns: minmax(0, 1fr);
+  &:focus-visible {
+    outline: 3px solid var(--hm-yellow);
+    outline-offset: 2px;
   }
 
-  .owner-side {
-    white-space: normal;
+  .category-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--hm-yellow-wash);
   }
-}
 
-h1 {
-  font: var(--mat-sys-headline-small);
-  margin: 0 0 12px;
+  &.active {
+    background: var(--hm-ink);
+    border-color: var(--hm-ink);
+    color: #fff;
+
+    .category-icon {
+      background: var(--hm-yellow);
+      color: var(--hm-ink);
+    }
+  }
 }
 
 .assistant {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 32px;
 }
 
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  margin: 24px 0 16px;
-}
-
-.chips {
-  flex: 1;
-  min-width: 0;
-}
-
-.sort {
-  width: 200px;
-}
+// ---- Filters beside the results (desktop) or above them (phone) ---------------------------------
 
 .layout {
   display: grid;
-  // minmax(0, …) so a wide form field can't push the page wider than a phone screen.
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
+  align-items: start;
 
   &.with-filters {
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: 300px minmax(0, 1fr);
   }
 }
 
 .filters {
+  position: sticky;
+  top: 92px;
   display: flex;
   flex-direction: column;
-  align-self: start;
+  gap: 4px;
+  padding: 20px;
+  border-radius: var(--hm-radius);
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow);
 }
 
-.pair {
+.filters-head {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
 
-  mat-form-field {
-    flex: 1;
-    min-width: 0;
+  h2 {
+    margin: 0;
+    font: var(--mat-sys-title-large);
+    font-weight: 700;
   }
 }
 
-.count {
-  margin: 0 0 12px;
-  color: var(--mat-sys-on-surface-variant);
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+
+  button[type='submit'] {
+    flex: 1;
+  }
+}
+
+// ---- Results ---------------------------------------------------------------------------------------
+
+.results {
+  min-width: 0;
+}
+
+.results-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  margin: 0;
+  font: var(--mat-sys-headline-small);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sort {
+  width: 190px;
+}
+
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-  margin: 0 0 8px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  margin: 8px 0 24px;
   padding: 0;
   list-style: none;
   transition: opacity 0.2s;
@@ -149,39 +410,95 @@ h1 {
   }
 }
 
+// A card: the picture on top, then name, place, and the price with a black arrow disc.
 .card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   height: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: var(--hm-radius);
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow);
   color: inherit;
   text-decoration: none;
-  border-radius: 12px;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 
-  mat-card {
-    height: 100%;
-    padding: 16px;
-    box-sizing: border-box;
-    transition: border-color 0.15s;
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: var(--hm-shadow-lift);
+
+    .open {
+      background: var(--hm-yellow);
+      color: var(--hm-ink);
+      transform: rotate(45deg);
+    }
   }
 
-  &:hover mat-card,
-  &:focus-visible mat-card {
-    border-color: var(--mat-sys-primary);
+  &:focus-visible {
+    outline: 3px solid var(--hm-ink);
+    outline-offset: 2px;
   }
 }
 
-.card-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font: var(--mat-sys-label-medium);
+.visual-wrap {
+  position: relative;
 }
 
-.category,
-.location {
+.tag,
+.status {
+  position: absolute;
+  top: 12px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--mat-sys-on-surface-variant);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font: var(--mat-sys-label-medium);
+  font-weight: 600;
+}
+
+.tag {
+  left: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.status {
+  right: 12px;
+  background: var(--hm-ink);
+  color: #fff;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 14px 8px 6px;
+}
+
+.name {
+  margin: 0 0 6px;
+  font: var(--mat-sys-title-medium);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: var(--hm-muted);
 
   mat-icon {
     font-size: 18px;
@@ -190,52 +507,178 @@ h1 {
   }
 }
 
-.status {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--mat-sys-tertiary-container);
-  color: var(--mat-sys-on-tertiary-container);
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
 }
 
-.name {
-  font: var(--mat-sys-title-medium);
-  margin: 12px 0 4px;
-}
-
-.location,
 .rate {
-  margin: 4px 0 0;
+  margin: 0;
+  white-space: nowrap;
+
+  strong {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  span {
+    color: var(--hm-muted);
+  }
 }
 
-.rate strong {
-  font: var(--mat-sys-title-medium);
-  color: var(--mat-sys-primary);
+.open {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--hm-ink);
+  color: #fff;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 48px 16px;
+  gap: 12px;
+  padding: 56px 16px;
+  border-radius: var(--hm-radius);
+  background: var(--hm-card);
   text-align: center;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--hm-muted);
 
   mat-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--hm-ink);
+  }
+
+  p {
+    margin: 0;
   }
 }
 
-@media (max-width: 959px) {
+mat-paginator {
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-card);
+}
+
+// ---- Smaller screens ------------------------------------------------------------------------------
+
+@media (max-width: 1099px) {
+  .layout.with-filters {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 899px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'text'
+      'search'
+      'owner';
+    gap: 16px;
+  }
+
   .layout.with-filters {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filters {
+    position: static;
   }
 }
 
 @media (max-width: 599px) {
+  .search-field {
+    height: 54px;
+    padding-left: 16px;
+  }
+
+  .filters-toggle {
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+  }
+
+  .go {
+    width: 42px;
+    height: 42px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    padding: 6px;
+    border-radius: 20px;
+  }
+
+  .card-body {
+    padding: 10px 6px 4px;
+  }
+
+  .name {
+    font: var(--mat-sys-title-small);
+    font-weight: 700;
+  }
+
+  .rate strong {
+    font-size: 15px;
+  }
+
+  .rate span {
+    font-size: 12px;
+  }
+
+  // One swipeable row instead of three stacked chips.
+  .facts {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-right: -16px;
+    padding-right: 16px;
+    scrollbar-width: none;
+
+    li {
+      flex: none;
+    }
+  }
+
+  .open {
+    width: 34px;
+    height: 34px;
+  }
+
+  .tag {
+    display: none;
+  }
+
   .sort {
-    width: 100%;
+    width: 150px;
+  }
+}
+
+@media (max-width: 359px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

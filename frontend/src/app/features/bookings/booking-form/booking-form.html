@@ -31,7 +31,7 @@
   }
 
   @if (guest()) {
-    <button mat-flat-button type="submit" [disabled]="form.invalid" data-testid="book">
+    <button mat-flat-button class="cta" type="submit" [disabled]="form.invalid" data-testid="book">
       Sign in to book
     </button>
     <p class="hint">
@@ -40,6 +40,7 @@
   } @else {
     <button
       mat-flat-button
+      class="cta"
       type="submit"
       [disabled]="submitting() || !form.controls.start.value || form.invalid"
       data-testid="book"

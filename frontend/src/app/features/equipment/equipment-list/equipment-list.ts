@@ -3,7 +3,6 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -17,6 +16,7 @@ import { Observable, catchError, combineLatest, map, of, scan, startWith, switch
 import { AIService, EquipmentService, PageResponseEquipmentResponse } from '../../../api';
 import { errorMessage } from '../../../core/api-errors';
 import { AssistantPanel } from '../../assistant/assistant-panel';
+import { EquipmentVisual } from '../equipment-visual/equipment-visual';
 import { AuthService } from '../../../core/auth/auth.service';
 import { addDays, fromIsoDay, startOfToday, toIsoDay } from '../../../core/dates';
 import {
@@ -51,10 +51,10 @@ interface Results {
   selector: 'app-equipment-list',
   imports: [
     AssistantPanel,
+    EquipmentVisual,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
-    MatCardModule,
     MatChipsModule,
     MatDatepickerModule,
     MatFormFieldModule,
@@ -113,8 +113,10 @@ export class EquipmentList {
     { initialValue: false },
   );
 
+  // Closed to start with: the search bar and category buttons cover most searches, and the grid
+  // gets the full width. Open when the URL already has filters the buttons can't show.
   protected readonly showFilters = signal(
-    globalThis.matchMedia?.('(min-width: 960px)').matches ?? true,
+    hasPanelFilters(parseQuery(this.route.snapshot.queryParams)),
   );
   protected readonly filterForm = this.fb.group({
     category: this.fb.control<Category | ''>(''),
@@ -171,6 +173,11 @@ export class EquipmentList {
     });
   }
 
+  /** The category buttons above the results: one tap filters, "All" clears it. */
+  protected chooseCategory(category: Category | null): void {
+    this.go({ ...this.query(), category, page: 0 });
+  }
+
   protected changeSort(sort: SortOption): void {
     this.go({ ...this.query(), sort, page: 0 });
   }
@@ -218,4 +225,9 @@ export class EquipmentList {
         startWith<Results>({ state: 'loading' }),
       );
   }
+}
+
+/** Filters only the panel can set (location, price, dates), so it should start open to show them. */
+function hasPanelFilters(query: EquipmentQuery): boolean {
+  return !!(query.location || query.minRate !== null || query.maxRate !== null || query.from);
 }
