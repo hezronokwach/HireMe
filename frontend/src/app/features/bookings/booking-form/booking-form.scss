@@ -12,6 +12,23 @@
   }
 }
 
+.dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dates-hint {
+  margin-top: -6px !important;
+  text-align: left;
+}
+
+@media (max-width: 380px) {
+  .dates {
+    grid-template-columns: 1fr;
+  }
+}
+
 // The total, as a receipt line: days × rate on the left, the amount on the right.
 .quote {
   display: flex;

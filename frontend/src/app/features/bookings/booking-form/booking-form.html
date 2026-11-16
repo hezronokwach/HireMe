@@ -1,19 +1,38 @@
 <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="booking-form">
-  <mat-form-field subscriptSizing="dynamic">
-    <mat-label>Your dates</mat-label>
-    <mat-date-range-input
-      [rangePicker]="picker"
-      [min]="today"
-      [max]="lastDay()"
-      [dateFilter]="dateFilter"
-    >
-      <input matStartDate formControlName="start" placeholder="First day" data-testid="start" />
-      <input matEndDate formControlName="end" placeholder="Last day" data-testid="end" />
-    </mat-date-range-input>
-    <mat-hint>Booked days can't be picked. One day? Pick it twice.</mat-hint>
-    <mat-datepicker-toggle matIconSuffix [for]="picker" />
-    <mat-date-range-picker #picker />
-  </mat-form-field>
+  <!-- Two separate fields: easier to read and to change one end of the hire than a combined range. -->
+  <div class="dates">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>First day</mat-label>
+      <input
+        matInput
+        [matDatepicker]="startPicker"
+        formControlName="start"
+        [min]="today"
+        [max]="lastDay()"
+        [matDatepickerFilter]="dateFilter"
+        placeholder="DD/MM/YYYY"
+        data-testid="start"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="startPicker" />
+      <mat-datepicker #startPicker />
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Last day</mat-label>
+      <input
+        matInput
+        [matDatepicker]="endPicker"
+        formControlName="end"
+        [min]="form.controls.start.value ?? today"
+        [max]="lastDay()"
+        [matDatepickerFilter]="dateFilter"
+        placeholder="DD/MM/YYYY"
+        data-testid="end"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="endPicker" />
+      <mat-datepicker #endPicker [startAt]="form.controls.start.value" />
+    </mat-form-field>
+  </div>
+  <p class="hint dates-hint">Booked days can't be picked. Leave the last day empty for one day.</p>
 
   @if (form.hasError('overlapsBooking')) {
     <p class="problem" role="alert">These dates include days that are already booked.</p>

@@ -1,6 +1,6 @@
 import { provideDayFirstDates } from '../../../core/day-first-dates';
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   NonNullableFormBuilder,
@@ -11,6 +11,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { BookedPeriod, BookingsService, EquipmentResponse } from '../../../api';
@@ -58,7 +59,13 @@ export function freeRange(booked: () => Set<string>): ValidatorFn {
 /** Picks dates for a listing, shows the total, and sends the booking request. */
 @Component({
   selector: 'app-booking-form',
-  imports: [ReactiveFormsModule, MatButtonModule, MatDatepickerModule, MatFormFieldModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
   providers: [provideDayFirstDates()],
   templateUrl: './booking-form.html',
   styleUrl: './booking-form.scss',
@@ -108,6 +115,16 @@ export class BookingForm implements OnInit {
 
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
+
+  constructor() {
+    // A first day after the chosen last day: the last day no longer makes sense, so clear it.
+    this.form.controls.start.valueChanges.pipe(takeUntilDestroyed()).subscribe((start) => {
+      const end = this.form.controls.end.value;
+      if (start && end && end < start) {
+        this.form.controls.end.setValue(null);
+      }
+    });
+  }
 
   ngOnInit(): void {
     const start = fromIsoDay(this.initialFrom());

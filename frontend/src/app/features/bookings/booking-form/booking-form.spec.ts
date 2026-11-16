@@ -94,6 +94,25 @@ describe('BookingForm', () => {
     expect(book().disabled).toBe(false);
   });
 
+  it('has separate first and last day fields; a later first day clears the last day', async () => {
+    expect(el().querySelector('[data-testid="start"]')).not.toBeNull();
+    expect(el().querySelector('[data-testid="end"]')).not.toBeNull();
+    expect(el().querySelector('mat-date-range-input')).toBeNull();
+
+    await pick(day(1), day(2));
+    const controls = (
+      fixture.componentInstance as unknown as {
+        form: { controls: { start: { setValue(v: Date): void }; end: { value: Date | null } } };
+      }
+    ).form.controls;
+    controls.start.setValue(day(3));
+    await fixture.whenStable();
+
+    expect(controls.end.value).toBeNull();
+    // With only the first day, it's a one-day booking.
+    expect(el().querySelector('[data-testid="quote"]')?.textContent).toMatch(/1 day/);
+  });
+
   it("won't take dates that run over a booked day", async () => {
     await pick(day(4), day(7));
     expect(el().textContent).toContain('These dates include days that are already booked.');
