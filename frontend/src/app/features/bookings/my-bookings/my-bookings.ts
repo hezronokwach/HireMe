@@ -1,3 +1,4 @@
+import { EquipmentVisual } from '../../equipment/equipment-visual/equipment-visual';
 import { Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -48,6 +49,7 @@ interface Bookings {
   selector: 'app-my-bookings',
   imports: [
     RouterLink,
+    EquipmentVisual,
     MatButtonModule,
     MatCardModule,
     MatIconModule,

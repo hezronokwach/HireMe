@@ -23,6 +23,12 @@
   @case ('ready') {
     @if (detail().booking; as booking) {
       <mat-card appearance="outlined" class="card">
+        <app-equipment-visual
+          class="visual"
+          size="hero"
+          [name]="detail().equipment?.name"
+          [category]="detail().equipment?.category"
+        />
         <div class="top">
           <h1>
             @if (detail().equipment; as equipment) {

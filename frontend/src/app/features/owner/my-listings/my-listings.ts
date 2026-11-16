@@ -1,3 +1,4 @@
+import { EquipmentVisual } from '../../equipment/equipment-visual/equipment-visual';
 import { Component, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -48,6 +49,7 @@ interface Listings {
   selector: 'app-my-listings',
   imports: [
     RouterLink,
+    EquipmentVisual,
     MatButtonModule,
     MatCardModule,
     MatIconModule,

@@ -1,8 +1,9 @@
 // Status badge colours shared by the booking pages (owner and client).
 .status {
-  padding: 2px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   font: var(--mat-sys-label-medium);
+  font-weight: 700;
   white-space: nowrap;
   background: var(--mat-sys-primary-container);
   color: var(--mat-sys-on-primary-container);

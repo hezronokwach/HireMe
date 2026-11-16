@@ -189,7 +189,7 @@
 
       <div class="form-actions">
         <a mat-button routerLink="/my-listings">Cancel</a>
-        <button mat-flat-button type="submit" [disabled]="saving()">
+        <button mat-flat-button class="cta" type="submit" [disabled]="saving()">
           {{ saving() ? 'Saving…' : editing() ? 'Save changes' : 'Create listing' }}
         </button>
       </div>
