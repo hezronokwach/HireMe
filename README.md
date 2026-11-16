@@ -125,6 +125,7 @@ Modules refer to each other's records by ID only (`ownerId`, `equipmentId`, `cli
 | `location`     | Required                                           |
 | `status`       | `AVAILABLE` (default) or `UNDER_MAINTENANCE`, set by the owner. Says whether the listing takes bookings; booked dates come from bookings (see [Availability](#availability)) |
 | `createdAt` / `updatedAt` | Timestamps                              |
+| `photoUrls`    | Its photos, cover first (paths such as `/api/v1/equipment/5/photos/12`; empty when it has none). Up to 6 per listing. |
 
 ### Booking
 
@@ -337,7 +338,11 @@ Returns `401` for a wrong email or password.
 | `POST`   | `/equipment/ai/assistant` | Public (guests share one rate-limit budget) | Talk with the hire assistant; returns its reply, listing cards with prices and suggested follow-ups (see [AI Features](#ai-features)). |
 | `POST`   | `/equipment/ai/search` | Authenticated | Search with a sentence; returns the interpreted filters and the results (see [AI Features](#ai-features)). |
 | `POST`   | `/equipment/ai/describe` | OWNER, ADMIN | Draft a title, description and daily rate with AI (see [AI Features](#ai-features)). Nothing is saved. |
-| `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`409`) while it has `PENDING`, `CONFIRMED` or `ACTIVE` bookings that end today or later. |
+| `DELETE` | `/equipment/{id}` | OWNER, ADMIN   | Delete a listing you own (ADMIN: any listing) (`204`). Refused (`409`) while it has `PENDING`, `CONFIRMED` or `ACTIVE` bookings that end today or later. Its photos go with it. |
+| `POST`   | `/equipment/{id}/photos` | OWNER, ADMIN | Add a photo to a listing you own (`201`, multipart field `file`). JPEG, PNG or WebP, at most 2 MB, up to 6 per listing; the type is read from the file itself, not trusted from the upload. |
+| `GET`    | `/equipment/{id}/photos/{photoId}` | Public | The image itself, cached by browsers for a year (a photo id always means the same picture). |
+| `DELETE` | `/equipment/{id}/photos/{photoId}` | OWNER, ADMIN | Remove a photo (`204`). |
+| `PUT`    | `/equipment/{id}/photos/{photoId}/cover` | OWNER, ADMIN | Make a photo the first one, the listing's cover (`204`). |
 
 Create request (`CreateEquipmentRequest`):
 
@@ -547,7 +552,7 @@ It covers accounts, finding equipment, booking it, and the owner pages.
   - **Booking hand-off:** **Book these dates** opens the listing with those days already in the booking form (`/equipment/:id?from=…&to=…`).
   - **Memory:** the conversation is kept for the browser tab (sessionStorage), so going to a listing and back keeps it. **New conversation** clears it.
   - **When AI is off** (`GET /api/v1/ai/status`), the panel is hidden and the filters work as before.
-- **Detail** (`/equipment/:id`): description, rate and status, plus a calendar of the next 12 months with confirmed bookings marked and listed (from `GET /api/v1/equipment/{id}/availability`). **Back to results** returns to the list with its filters. Clients book from here (see below).
+- **Detail** (`/equipment/:id`): a photo carousel when the listing has photos (swipe, arrows, dots, thumbnails or the arrow keys), description, rate and status, plus a calendar of the next 12 months with confirmed bookings marked and listed (from `GET /api/v1/equipment/{id}/availability`). **Back to results** returns to the list with its filters. Clients book from here (see below).
 - **Dates** are shown and typed day first (`15/11/2026`). Material's plain date adapter can't read that, so `core/day-first-dates.ts` parses it, and ISO dates too.
 
 ### For clients
@@ -573,6 +578,11 @@ These pages are open to `OWNER` and `ADMIN` only (`roleGuard`). The header shows
   - **Validation:** name, category and location are required, and the daily rate must be above zero. The limits match the API.
   - **Partial updates:** an edit sends only the fields that changed (the API applies only what it receives), and saving with no changes sends nothing.
   - **Ownership:** another owner's listing can't be edited (the API refuses it anyway).
+- **Photos** (on the same form): up to 6, picked from the device (several at once).
+  - **Before upload:** each photo is shrunk in the browser to at most 1600 px as a JPEG, so a 4 MB phone photo uploads as a few hundred KB.
+  - **When they're saved:** on an existing listing, adding, removing and choosing the cover (star) save straight away. On a new listing the photos wait until **Create listing**, then upload in order.
+  - **Cover:** the first photo is the cover on cards and in **My listings**. Listings without photos keep their drawn equipment tile.
+  - **Storage:** photos live in the database (`app_equipment.equipment_photo`), because the API's host (Render) loses its disk on every deploy. Shrinking in the browser and the API's limits keep that small.
 - **Write it for me:** with a name and category (plus a location for a rate suggestion, and optional details), `POST /api/v1/equipment/ai/describe` drafts a title and description. It also suggests a rate when there are similar listings to compare with, and says why. The owner copies the text, the rate, or both into the form and can still change them. Nothing is saved until **Create listing**. The section is hidden when AI is off, and it shows the API's message when AI is unavailable or the per-minute limit is reached.
 - **Bookings on my equipment** (`/owner-bookings`, from `GET /api/v1/bookings/for-my-equipment`): earliest first, filtered by status through the URL (`?status=PENDING`). Each booking shows the listing, who booked it (with their phone number as a tap-to-call link while the booking is open), dates and number of days, total and request date. The buttons follow the API's rules:
   - **Pending:** Confirm (no question asked) or Decline. Confirming also declines the other pending requests for those days.
