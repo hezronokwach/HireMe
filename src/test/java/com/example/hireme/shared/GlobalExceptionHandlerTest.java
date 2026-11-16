@@ -33,6 +33,26 @@ class GlobalExceptionHandlerTest {
     private GlobalExceptionHandler exceptionHandler;
 
     @Test
+    void handleDataIntegrityViolation_returns409WithoutDatabaseDetails() {
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleDataIntegrityViolation(
+                new org.springframework.dao.DataIntegrityViolationException(
+                        "could not execute statement [Unique index USERS_PHONE_NUMBER_KEY]"));
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertFalse(response.getBody().message().contains("USERS_PHONE_NUMBER_KEY"));
+        assertTrue(response.getBody().message().contains("already registered"));
+    }
+
+    @Test
+    void handleBaseException_passesOnTheFieldErrors() {
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleBaseException(
+                com.example.hireme.user.internal.exception.UserAlreadyExistsException.phoneNumber());
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertTrue(response.getBody().errors().containsKey("phoneNumber"));
+    }
+
+    @Test
     void handleOptimisticLockingFailure_returnsConflict() {
         ObjectOptimisticLockingFailureException ex = new ObjectOptimisticLockingFailureException("BookingEntity", 1L);
 
@@ -108,25 +128,5 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertTrue(response.getBody().message().contains("Something went wrong"));
-    }
-
-    @Test
-    void handleDataIntegrityViolation_returns409WithoutDatabaseDetails() {
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleDataIntegrityViolation(
-                new org.springframework.dao.DataIntegrityViolationException(
-                        "could not execute statement [Unique index USERS_PHONE_NUMBER_KEY]"));
-
-        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-        assertFalse(response.getBody().message().contains("USERS_PHONE_NUMBER_KEY"));
-        assertTrue(response.getBody().message().contains("already registered"));
-    }
-
-    @Test
-    void handleBaseException_passesOnTheFieldErrors() {
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleBaseException(
-                com.example.hireme.user.internal.exception.UserAlreadyExistsException.phoneNumber());
-
-        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-        assertTrue(response.getBody().errors().containsKey("phoneNumber"));
     }
 }
