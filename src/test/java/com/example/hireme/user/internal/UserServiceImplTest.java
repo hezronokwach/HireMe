@@ -65,6 +65,25 @@ class UserServiceImplTest {
     }
 
     @Test
+    void register_phoneAlreadyUsedInTheOtherForm_isRefusedOnThePhoneField() {
+        // Registered as 0712345678; signing up again as +254712345678 is the same number.
+        RegisterRequest request = new RegisterRequest("John", "new@test.com", "+254712345678", "password123", Role.CLIENT);
+        when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
+        when(userRepository.existsByPhoneNumberIn(List.of("+254712345678", "0712345678"))).thenReturn(true);
+
+        UserAlreadyExistsException e = assertThrows(UserAlreadyExistsException.class, () -> userService.register(request));
+
+        assertTrue(e.getErrors().containsKey("phoneNumber"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void phoneForms_coverBothWaysOfWritingAKenyanNumber() {
+        assertEquals(List.of("0712345678", "+254712345678"), UserServiceImpl.phoneForms("0712345678"));
+        assertEquals(List.of("+254712345678", "0712345678"), UserServiceImpl.phoneForms(" +254712345678 "));
+    }
+
+    @Test
     void isOwner_ownerRole_returnsTrue() {
         User user = new User();
         user.setRole(Role.OWNER);

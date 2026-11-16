@@ -28,12 +28,28 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse register(RegisterRequest registerRequest) {
        if(userRepository.existsByEmail(registerRequest.email())) {
-           throw new UserAlreadyExistsException(registerRequest.email());
+           throw UserAlreadyExistsException.email();
+       }
+       // 0712345678 and +254712345678 are the same number, so a number counts as taken in either form.
+       if (userRepository.existsByPhoneNumberIn(phoneForms(registerRequest.phoneNumber()))) {
+           throw UserAlreadyExistsException.phoneNumber();
        }
        String encodedPassword = passwordEncoder.encode(registerRequest.password());
        User user = userMapper.toEntity(registerRequest, encodedPassword);
        User savedUser = userRepository.save(user);
        return userMapper.toResponse(savedUser);
+    }
+
+    /** A Kenyan mobile number in both forms the API accepts: 07XXXXXXXX and +2547XXXXXXXX. */
+    static java.util.List<String> phoneForms(String phoneNumber) {
+        String phone = phoneNumber == null ? "" : phoneNumber.strip();
+        if (phone.startsWith("+254")) {
+            return java.util.List.of(phone, "0" + phone.substring(4));
+        }
+        if (phone.startsWith("0")) {
+            return java.util.List.of(phone, "+254" + phone.substring(1));
+        }
+        return java.util.List.of(phone);
     }
 
     @Override
