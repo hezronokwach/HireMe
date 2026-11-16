@@ -18,9 +18,12 @@ export function errorMessage(
   return fallback;
 }
 
-/** Per-field messages from a 400 validation error, keyed by request field name. */
+/**
+ * Per-field messages, keyed by request field name: from a 400 validation error, or a 409 that names the
+ * field (e.g. "This phone number is already registered" on phoneNumber).
+ */
 export function fieldErrors(error: unknown): Record<string, string> {
-  if (error instanceof HttpErrorResponse && error.status === 400) {
+  if (error instanceof HttpErrorResponse && (error.status === 400 || error.status === 409)) {
     const body = error.error as ErrorResponse | null;
     return body?.errors ?? {};
   }
