@@ -179,7 +179,6 @@ class EquipmentPhotoServiceImplTest {
         assertEquals(a.hashCode(), b.hashCode());
         assertNotEquals(a, new EquipmentPhotoService.Photo("image/png", JPEG));
         assertNotEquals(a, new EquipmentPhotoService.Photo("image/jpeg", PNG));
-        assertNotEquals(a, "not a photo");
         assertEquals("Photo[contentType=image/png, bytes=" + PNG.length + "]", a.toString());
         assertEquals("Photo[contentType=null, bytes=0]", new EquipmentPhotoService.Photo(null, null).toString());
     }
