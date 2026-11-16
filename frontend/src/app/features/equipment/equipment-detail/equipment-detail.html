@@ -25,7 +25,11 @@
     @if (detail().equipment; as item) {
       <article class="detail">
         <div class="gallery">
-          <app-equipment-visual size="hero" [name]="item.name" [category]="item.category" />
+          @if (item.photoUrls?.length) {
+            <app-photo-carousel [photos]="item.photoUrls!" [name]="item.name" />
+          } @else {
+            <app-equipment-visual size="hero" [name]="item.name" [category]="item.category" />
+          }
         </div>
 
         <header class="info">

@@ -1,0 +1,76 @@
+<div class="stage">
+  <div
+    #track
+    class="track"
+    tabindex="0"
+    role="region"
+    aria-roledescription="carousel"
+    [attr.aria-label]="'Photos of ' + name()"
+    (scroll)="onScroll()"
+    (keydown)="onKey($event)"
+  >
+    @for (src of srcs(); track src; let i = $index) {
+      <figure
+        class="slide"
+        role="group"
+        aria-roledescription="slide"
+        [attr.aria-label]="i + 1 + ' of ' + srcs().length"
+        data-testid="slide"
+      >
+        <img
+          [src]="src"
+          [alt]="name() + ', photo ' + (i + 1)"
+          [attr.loading]="i === 0 ? 'eager' : 'lazy'"
+          decoding="async"
+        />
+      </figure>
+    }
+  </div>
+
+  @if (srcs().length > 1) {
+    <button
+      type="button"
+      class="arrow prev"
+      aria-label="Previous photo"
+      (click)="go(index() - 1)"
+      data-testid="prev"
+    >
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <button
+      type="button"
+      class="arrow next"
+      aria-label="Next photo"
+      (click)="go(index() + 1)"
+      data-testid="next"
+    >
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+    <span class="counter" aria-live="polite" data-testid="counter"
+      >{{ index() + 1 }} / {{ srcs().length }}</span
+    >
+    <div class="dots" aria-hidden="true">
+      @for (src of srcs(); track src; let i = $index) {
+        <span class="dot" [class.active]="i === index()"></span>
+      }
+    </div>
+  }
+</div>
+
+@if (srcs().length > 1) {
+  <div class="thumbs" role="tablist" aria-label="Choose a photo">
+    @for (src of srcs(); track src; let i = $index) {
+      <button
+        type="button"
+        role="tab"
+        class="thumb"
+        [class.active]="i === index()"
+        [attr.aria-selected]="i === index()"
+        [attr.aria-label]="'Photo ' + (i + 1)"
+        (click)="go(i)"
+      >
+        <img [src]="src" alt="" loading="lazy" />
+      </button>
+    }
+  </div>
+}

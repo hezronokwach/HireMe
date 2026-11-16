@@ -22,6 +22,7 @@ import { EquipmentAvailabilityResponse, EquipmentResponse, EquipmentService } fr
 import { errorMessage } from '../../../core/api-errors';
 import { AuthService } from '../../../core/auth/auth.service';
 import { EquipmentVisual } from '../equipment-visual/equipment-visual';
+import { PhotoCarousel } from '../photo-carousel/photo-carousel';
 import { addDays, formatRange, fromIsoDay, startOfToday, toIsoDay } from '../../../core/dates';
 import { BookingForm } from '../../bookings/booking-form/booking-form';
 import { categoryIcon, categoryLabel, formatKes, statusLabel } from '../equipment-labels';
@@ -40,6 +41,7 @@ interface Detail {
   selector: 'app-equipment-detail',
   imports: [
     EquipmentVisual,
+    PhotoCarousel,
     RouterLink,
     MatButtonModule,
     BookingForm,
