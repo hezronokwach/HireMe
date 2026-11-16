@@ -1,27 +1,43 @@
-// The demo owner panel under the login form: set apart (dashed, no card), so it reads as a side door
-// for visitors rather than a second way to log in.
+// The demo owner panel under the login form: a yellow ticket with a dashed edge, so it reads as a side
+// door for visitors rather than a second way to log in.
 .demo {
-  margin-top: 24px;
-  padding: 16px 20px;
-  border: 1px dashed var(--mat-sys-outline);
-  border-radius: 12px;
+  padding: 20px;
+  border-radius: 22px;
+  background: var(--hm-yellow-wash);
+  border: 1.5px dashed #e8c45a;
 
   h2 {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     margin: 0 0 8px;
     font: var(--mat-sys-title-medium);
+    font-weight: 700;
+
+    mat-icon {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: var(--hm-yellow);
+      font-size: 20px;
+    }
   }
 
   p {
-    margin: 0 0 12px;
-    font: var(--mat-sys-body-medium);
+    margin: 0 0 14px;
+    color: var(--hm-ink-soft);
+  }
+
+  button {
+    width: 100%;
   }
 
   .note {
     margin: 12px 0 0;
-    color: var(--mat-sys-on-surface-variant);
+    color: var(--hm-muted);
     font: var(--mat-sys-body-small);
+    text-align: center;
   }
 }

@@ -1,7 +1,124 @@
 :host {
   display: block;
-  max-width: 420px;
+}
+
+// Desktop: a black brand panel beside the form, in one rounded frame. Phones: just the form.
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  max-width: 1040px;
   margin: 0 auto;
+  border-radius: 32px;
+  overflow: hidden;
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow-lift);
+}
+
+.auth-aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 44px;
+  overflow: hidden;
+  background:
+    radial-gradient(520px 320px at 0% 100%, rgba(255, 201, 40, 0.28), rgba(255, 201, 40, 0) 70%),
+    var(--hm-ink);
+  color: #fff;
+}
+
+.aside-logo {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: var(--hm-yellow);
+  color: var(--hm-ink);
+  font-weight: 800;
+  font-size: 22px;
+}
+
+.aside-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(1.9rem, 1.4rem + 1.4vw, 2.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+
+  span {
+    color: var(--hm-yellow);
+  }
+}
+
+.aside-points {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: rgba(255, 255, 255, 0.82);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  mat-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--hm-yellow);
+    font-size: 20px;
+  }
+}
+
+// Three big equipment glyphs along the bottom edge, like a shelf.
+.aside-art {
+  display: flex;
+  gap: 18px;
+  margin-top: auto;
+
+  mat-icon {
+    width: auto;
+    height: auto;
+    font-size: 64px;
+    color: rgba(255, 255, 255, 0.12);
+
+    &:first-child {
+      color: var(--hm-yellow);
+    }
+  }
+}
+
+.auth-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 44px;
+}
+
+.auth-card {
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  margin: 0;
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 6px 0 24px;
+  color: var(--hm-muted);
 }
 
 form {
@@ -10,28 +127,45 @@ form {
   gap: 4px;
 }
 
-h1 {
-  font: var(--mat-sys-headline-small);
-  margin: 0 0 16px;
-}
-
 .error {
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fdecea;
+  color: #8c1d18;
 }
 
 .actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin-top: 8px;
+
+  button {
+    width: 100%;
+  }
 }
 
 .switch {
-  margin-top: 24px;
-  font: var(--mat-sys-body-medium);
+  margin: 20px 0 0;
+  text-align: center;
+  color: var(--hm-muted);
+
+  a {
+    color: var(--hm-ink);
+    font-weight: 700;
+  }
+}
+
+@media (max-width: 899px) {
+  .auth {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 480px;
+    border-radius: 28px;
+  }
+
+  .auth-aside {
+    display: none;
+  }
+
+  .auth-main {
+    padding: 28px 22px;
+  }
 }
