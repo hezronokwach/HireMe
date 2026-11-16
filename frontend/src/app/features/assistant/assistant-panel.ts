@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { ListingCard } from '../../api';
 import { AuthService } from '../../core/auth/auth.service';
+import { EquipmentVisual } from '../equipment/equipment-visual/equipment-visual';
 import { formatRange } from '../../core/dates';
 import { categoryIcon, formatKes } from '../equipment/equipment-labels';
 import { AssistantChat, MAX_MESSAGE_LENGTH } from './assistant-chat.service';
@@ -26,7 +27,7 @@ export const STARTERS = [
 /** "Ask HireMe": a conversation with the hire assistant, with listing cards it can hand off to booking. */
 @Component({
   selector: 'app-assistant-panel',
-  imports: [RouterLink, MatButtonModule, MatIconModule],
+  imports: [RouterLink, MatButtonModule, MatIconModule, EquipmentVisual],
   templateUrl: './assistant-panel.html',
   styleUrl: './assistant-panel.scss',
 })
