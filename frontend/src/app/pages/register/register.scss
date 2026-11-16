@@ -1,17 +1,45 @@
+// The two account types as big selectable tiles; the chosen one turns yellow.
 .roles {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0 0 16px;
+  margin: 0 0 18px;
   padding: 0;
   border: 0;
 
   legend {
+    margin-bottom: 10px;
     font: var(--mat-sys-title-small);
-    margin-bottom: 4px;
+    font-weight: 700;
+  }
+
+  mat-radio-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  mat-radio-button {
+    display: flex;
+    min-height: 64px;
+    padding: 6px 10px 6px 2px;
+    border: 1.5px solid var(--hm-line);
+    border-radius: 18px;
+    background: var(--hm-paper);
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+
+    &.mat-mdc-radio-checked {
+      border-color: var(--hm-ink);
+      background: var(--hm-yellow-wash);
+    }
   }
 }
 
 .hint-error {
   color: var(--mat-sys-error);
+}
+
+@media (max-width: 420px) {
+  .roles mat-radio-group {
+    grid-template-columns: 1fr;
+  }
 }

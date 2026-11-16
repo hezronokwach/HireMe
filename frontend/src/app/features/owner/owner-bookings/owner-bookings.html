@@ -37,6 +37,7 @@
                 class="row"
                 [attr.data-testid]="'booking-' + booking.bookingId"
               >
+                <app-equipment-visual size="thumb" [name]="equipmentName()(booking.equipmentId)" />
                 <div class="info">
                   <a class="name" [routerLink]="['/equipment', booking.equipmentId]">
                     {{ equipmentName()(booking.equipmentId) }}

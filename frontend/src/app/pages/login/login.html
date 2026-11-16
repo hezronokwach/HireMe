@@ -1,66 +1,84 @@
-<mat-card appearance="outlined">
-  <mat-card-content>
-    <h1>Log in</h1>
-    @if (error()) {
-      <p class="error" role="alert">{{ error() }}</p>
-    }
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <mat-form-field>
-        <mat-label>Email</mat-label>
-        <input matInput type="email" formControlName="email" autocomplete="email" />
-        @if (form.controls.email.hasError('required')) {
-          <mat-error>Enter your email</mat-error>
-        } @else if (form.controls.email.hasError('email')) {
-          <mat-error>Enter a valid email</mat-error>
-        }
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Password</mat-label>
-        <input
-          matInput
-          type="password"
-          formControlName="password"
-          autocomplete="current-password"
-        />
-        @if (form.controls.password.hasError('required')) {
-          <mat-error>Enter your password</mat-error>
-        }
-      </mat-form-field>
-      <div class="actions">
-        <button mat-flat-button type="submit" [disabled]="submitting()">
-          {{ submitting() ? 'Logging in…' : 'Log in' }}
-        </button>
-      </div>
-    </form>
-    <p class="switch">
-      New to HireMe?
-      <a routerLink="/register" [queryParams]="returnUrl() ? { returnUrl: returnUrl() } : {}"
-        >Create an account</a
-      >
-    </p>
-  </mat-card-content>
-</mat-card>
+<div class="auth">
+  <aside class="auth-aside" aria-hidden="true">
+    <span class="aside-logo">H</span>
+    <p class="aside-title">Hire the right machine, <span>by the day.</span></p>
+    <ul class="aside-points">
+      <li><mat-icon>search</mat-icon>Tractors, excavators and event gear across Kenya</li>
+      <li><mat-icon>payments</mat-icon>See the total before you send a request</li>
+      <li><mat-icon>verified</mat-icon>The owner confirms, and you can call them</li>
+    </ul>
+    <div class="aside-art">
+      <mat-icon>front_loader</mat-icon>
+      <mat-icon>agriculture</mat-icon>
+      <mat-icon>festival</mat-icon>
+    </div>
+  </aside>
 
-@if (demoAvailable()) {
-  <section class="demo" aria-labelledby="demo-title" data-testid="demo-owner">
-    <h2 id="demo-title">
-      <mat-icon aria-hidden="true">storefront</mat-icon>
-      See the owner side
-    </h2>
-    <p>
-      Sign in as <strong>HireMe Demo Rentals</strong>, an owner with 15 listings and booking
-      requests waiting. No password, and a short guide shows you around.
-    </p>
-    <button
-      mat-stroked-button
-      type="button"
-      [disabled]="demoSigningIn() || submitting()"
-      (click)="signInAsDemoOwner()"
-    >
-      {{ demoSigningIn() ? 'Signing in…' : 'Sign in as the demo owner' }}
-    </button>
-    <p class="note">
-      To book equipment yourself, create a client account above. It takes half a minute.
-    </p>
-  </section>
-}
+  <div class="auth-main">
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p class="sub">Log in to book equipment or manage your listings.</p>
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <mat-form-field>
+          <mat-label>Email</mat-label>
+          <input matInput type="email" formControlName="email" autocomplete="email" />
+          @if (form.controls.email.hasError('required')) {
+            <mat-error>Enter your email</mat-error>
+          } @else if (form.controls.email.hasError('email')) {
+            <mat-error>Enter a valid email</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Password</mat-label>
+          <input
+            matInput
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+          @if (form.controls.password.hasError('required')) {
+            <mat-error>Enter your password</mat-error>
+          }
+        </mat-form-field>
+        <div class="actions">
+          <button mat-flat-button class="cta" type="submit" [disabled]="submitting()">
+            {{ submitting() ? 'Logging in…' : 'Log in' }}
+          </button>
+        </div>
+      </form>
+      <p class="switch">
+        New to HireMe?
+        <a routerLink="/register" [queryParams]="returnUrl() ? { returnUrl: returnUrl() } : {}"
+          >Create an account</a
+        >
+      </p>
+    </div>
+
+    @if (demoAvailable()) {
+      <section class="demo" aria-labelledby="demo-title" data-testid="demo-owner">
+        <h2 id="demo-title">
+          <mat-icon aria-hidden="true">storefront</mat-icon>
+          See the owner side
+        </h2>
+        <p>
+          Sign in as <strong>HireMe Demo Rentals</strong>, an owner with 15 listings and booking
+          requests waiting. No password, and a short guide shows you around.
+        </p>
+        <button
+          mat-flat-button
+          type="button"
+          [disabled]="demoSigningIn() || submitting()"
+          (click)="signInAsDemoOwner()"
+        >
+          {{ demoSigningIn() ? 'Signing in…' : 'Sign in as the demo owner' }}
+        </button>
+        <p class="note">
+          To book equipment yourself, create a client account above. It takes half a minute.
+        </p>
+      </section>
+    }
+  </div>
+</div>

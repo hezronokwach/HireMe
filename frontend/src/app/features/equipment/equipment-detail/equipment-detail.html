@@ -1,4 +1,4 @@
-<a mat-button class="back" [routerLink]="backLink">
+<a class="back" [routerLink]="backLink">
   <mat-icon>arrow_back</mat-icon>
   Back to results
 </a>
@@ -11,20 +11,24 @@
     <div class="state">
       <mat-icon aria-hidden="true">search_off</mat-icon>
       <p>This listing doesn't exist or has been removed.</p>
-      <a mat-stroked-button routerLink="/equipment">Browse equipment</a>
+      <a mat-flat-button routerLink="/equipment">Browse equipment</a>
     </div>
   }
   @case ('error') {
     <div class="state" role="alert">
       <mat-icon aria-hidden="true">cloud_off</mat-icon>
       <p>{{ detail().error }}</p>
-      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+      <button mat-flat-button type="button" (click)="retry()">Try again</button>
     </div>
   }
   @case ('ready') {
     @if (detail().equipment; as item) {
       <article class="detail">
-        <header>
+        <div class="gallery">
+          <app-equipment-visual size="hero" [name]="item.name" [category]="item.category" />
+        </div>
+
+        <header class="info">
           <span class="category">
             <mat-icon aria-hidden="true">{{ categoryIcon(item.category) }}</mat-icon>
             {{ categoryLabel(item.category) }}
@@ -33,13 +37,17 @@
           <p class="location"><mat-icon aria-hidden="true">place</mat-icon>{{ item.location }}</p>
         </header>
 
-        <mat-card appearance="outlined" class="booking">
-          <p class="rate">
-            <strong>{{ formatKes(item.dailyRateKes) }}</strong> / day
-          </p>
-          <p class="status" [class.unavailable]="item.equipmentStatus !== 'AVAILABLE'">
-            {{ statusLabel(item.equipmentStatus) }}
-          </p>
+        <aside class="booking" aria-label="Book this equipment">
+          <div class="price-row">
+            <p class="rate">
+              <strong>{{ formatKes(item.dailyRateKes) }}</strong>
+              <span>/ day</span>
+            </p>
+            <p class="status" [class.unavailable]="item.equipmentStatus !== 'AVAILABLE'">
+              <span class="status-dot" aria-hidden="true"></span>
+              {{ statusLabel(item.equipmentStatus) }}
+            </p>
+          </div>
           @if (auth.hasRole('CLIENT') || !auth.isLoggedIn()) {
             @if (item.equipmentStatus === 'AVAILABLE') {
               <app-booking-form
@@ -59,7 +67,7 @@
               a client account.
             </p>
           }
-        </mat-card>
+        </aside>
 
         <section class="description">
           <h2>About this equipment</h2>
@@ -67,8 +75,10 @@
         </section>
 
         <section class="availability" aria-labelledby="availability-title">
-          <h2 id="availability-title">Booked dates</h2>
-          <p class="hint">Confirmed bookings for the next 12 months. Every other day is free.</p>
+          <div class="section-head">
+            <h2 id="availability-title">Booked dates</h2>
+            <p class="hint">Confirmed bookings for the next 12 months. Every other day is free.</p>
+          </div>
           <div class="availability-body">
             <mat-calendar
               [startAt]="today"
@@ -87,7 +97,10 @@
                 }
               </ul>
             } @else {
-              <p class="free" data-testid="no-bookings">No bookings yet: all days are free.</p>
+              <p class="free" data-testid="no-bookings">
+                <mat-icon aria-hidden="true">event_available</mat-icon>
+                No bookings yet: all days are free.
+              </p>
             }
           </div>
         </section>

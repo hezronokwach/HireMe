@@ -1,22 +1,29 @@
 @use '../owner-page';
 
 :host {
-  max-width: 720px;
+  max-width: 760px;
 }
 
 .back {
-  margin: 0 0 8px -12px;
+  margin: 0 0 12px -12px;
 }
 
 h1 {
-  font: var(--mat-sys-headline-small);
-  margin: 0 0 16px;
+  margin: 0 0 20px;
+  font-weight: 800;
+  font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.5rem);
+  letter-spacing: -0.02em;
 }
 
+// The form sits on one white card.
 .form {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 28px;
+  border-radius: var(--hm-radius);
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow);
 }
 
 .pair {
@@ -37,33 +44,68 @@ h1 {
 
 .banner {
   margin: 8px 0;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
 
   &.error {
-    background: var(--mat-sys-error-container);
-    color: var(--mat-sys-on-error-container);
+    background: #fdecea;
+    color: #8c1d18;
   }
 }
 
+// "Write it for me": a dark AI box, like the assistant on the equipment page.
 .ai {
   margin: 4px 0 20px;
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--mat-sys-surface-container-low);
-  border: 1px solid var(--mat-sys-outline-variant);
+  padding: 20px;
+  border-radius: 22px;
+  background:
+    radial-gradient(400px 160px at 100% 0%, rgba(255, 201, 40, 0.2), rgba(255, 201, 40, 0) 70%),
+    var(--hm-ink);
+  color: #fff;
 
   h2 {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    margin: 0 0 6px;
     font: var(--mat-sys-title-medium);
-    margin: 0 0 4px;
-    color: var(--mat-sys-primary);
+    font-weight: 700;
+
+    mat-icon {
+      color: var(--hm-yellow);
+    }
+  }
+
+  .hint {
+    color: rgba(255, 255, 255, 0.65);
   }
 
   mat-form-field {
     width: 100%;
+    --mat-form-field-outlined-outline-color: #3a3a3a;
+    --mat-form-field-outlined-hover-outline-color: #777;
+    --mat-form-field-outlined-focus-outline-color: var(--hm-yellow);
+    --mat-form-field-outlined-label-text-color: rgba(255, 255, 255, 0.6);
+    --mat-form-field-outlined-focus-label-text-color: var(--hm-yellow);
+    --mat-form-field-outlined-input-text-color: #fff;
+    --mat-form-field-outlined-input-text-placeholder-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .ai-actions button {
+    --mat-button-outlined-label-text-color: var(--hm-ink);
+    --mat-button-outlined-outline-color: var(--hm-yellow);
+    --mat-button-outlined-disabled-label-text-color: #777;
+    --mat-button-outlined-disabled-outline-color: #3a3a3a;
+    background: var(--hm-yellow);
+    font-weight: 700;
+
+    &:disabled {
+      background: transparent;
+    }
+  }
+
+  .draft {
+    color: var(--hm-ink);
   }
 }
 
@@ -103,7 +145,17 @@ h1 {
 
 .form-actions {
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: 12px;
+}
+
+@media (max-width: 599px) {
+  .form {
+    padding: 20px 16px;
+  }
+
+  .ai {
+    padding: 16px;
+  }
 }
 
 @media (max-width: 599px) {

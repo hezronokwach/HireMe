@@ -1,3 +1,4 @@
+import { EquipmentVisual } from '../../equipment/equipment-visual/equipment-visual';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -32,7 +33,14 @@ interface Detail {
 /** One of the client's bookings: what, when, how much, what its status means, and cancel. */
 @Component({
   selector: 'app-booking-detail',
-  imports: [RouterLink, MatButtonModule, MatCardModule, MatIconModule, MatProgressBarModule],
+  imports: [
+    RouterLink,
+    EquipmentVisual,
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    MatProgressBarModule,
+  ],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })

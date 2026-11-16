@@ -191,7 +191,14 @@ describe('ListingForm', () => {
   it('fills a draft from the AI, which the owner accepts piece by piece', async () => {
     const el = await open('/my-listings/new');
     const write = () => el.querySelector<HTMLButtonElement>('[data-testid="write-for-me"]')!;
-    expect(write().disabled).toBe(true);
+    // Clickable straight away; without a name and category it says what's missing, without calling the AI.
+    expect(write().disabled).toBe(false);
+    write().click();
+    await settle();
+    expect(el.querySelector('.ai [role="alert"]')?.textContent).toContain(
+      'Add the name and a category at the top first',
+    );
+    http.expectNone('/api/v1/equipment/ai/describe');
 
     type(el, 'name', 'Massey 385');
     type(el, 'location', 'Nakuru');

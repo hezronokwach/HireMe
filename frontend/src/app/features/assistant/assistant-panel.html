@@ -1,11 +1,12 @@
 <section class="panel" aria-labelledby="assistant-title">
   <header class="head">
-    <h2 id="assistant-title">
-      <mat-icon aria-hidden="true">auto_awesome</mat-icon>
-      Ask HireMe
-    </h2>
+    <span class="spark" aria-hidden="true"><mat-icon>auto_awesome</mat-icon></span>
+    <div class="titles">
+      <h2 id="assistant-title">Ask HireMe</h2>
+      <p>Your hire assistant: it finds, compares and prices equipment for your days.</p>
+    </div>
     @if (chat.entries().length) {
-      <button mat-button type="button" (click)="chat.reset()">
+      <button mat-button type="button" class="reset" (click)="chat.reset()">
         <mat-icon>restart_alt</mat-icon>
         New conversation
       </button>
@@ -43,7 +44,11 @@
             @for (card of entry.listings; track card.id) {
               <li class="card" [attr.data-testid]="'card-' + card.id">
                 <div class="card-head">
-                  <mat-icon aria-hidden="true">{{ categoryIcon(card.category) }}</mat-icon>
+                  <app-equipment-visual
+                    size="thumb"
+                    [name]="card.name"
+                    [category]="card.category"
+                  />
                   <a
                     class="name"
                     [routerLink]="['/equipment', card.id]"
@@ -141,7 +146,7 @@
       aria-label="Send"
       data-testid="assistant-send"
     >
-      <mat-icon>send</mat-icon>
+      <mat-icon>arrow_upward</mat-icon>
     </button>
   </form>
   <p class="fine-print">

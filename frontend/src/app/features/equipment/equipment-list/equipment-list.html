@@ -1,64 +1,97 @@
-@if (!auth.isLoggedIn()) {
-  <section class="intro" aria-label="About HireMe" data-testid="intro">
-    <p class="lede">
-      Tractors in Nakuru, excavators in Nairobi, tents in Mombasa: hire them by the day from the
-      people who own them.
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">
+      <span class="dot" aria-hidden="true"></span>
+      Equipment hire across Kenya
     </p>
-    <ul class="facts">
-      <li><mat-icon aria-hidden="true">visibility</mat-icon>Look around freely</li>
-      <li><mat-icon aria-hidden="true">event_available</mat-icon>Sign in only when you book</li>
-      <li><mat-icon aria-hidden="true">payments</mat-icon>Prices in KES, both days counted</li>
-    </ul>
+    <h1 class="hm-display">Find equipment <span class="accent">for any job</span></h1>
+    @if (!auth.isLoggedIn()) {
+      <div class="intro" data-testid="intro">
+        <p class="lede">
+          Tractors in Nakuru, excavators in Nairobi, tents in Mombasa: hire them by the day from the
+          people who own them.
+        </p>
+        <ul class="facts" aria-label="How it works">
+          <li><mat-icon aria-hidden="true">visibility</mat-icon>Look around freely</li>
+          <li><mat-icon aria-hidden="true">event_available</mat-icon>Sign in only to book</li>
+          <li><mat-icon aria-hidden="true">payments</mat-icon>Prices in KES per day</li>
+        </ul>
+      </div>
+    }
+  </div>
+
+  <form class="searchbar" [formGroup]="filterForm" (ngSubmit)="applyFilters()" role="search">
+    <label class="search-field">
+      <mat-icon aria-hidden="true">search</mat-icon>
+      <span class="visually-hidden">Search equipment</span>
+      <input
+        formControlName="q"
+        type="search"
+        placeholder="Search tractors, tents, excavators…"
+        autocomplete="off"
+      />
+      <button class="go" type="submit" aria-label="Search">
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </label>
+    <button
+      class="filters-toggle"
+      type="button"
+      (click)="showFilters.set(!showFilters())"
+      [class.on]="showFilters()"
+      [attr.aria-expanded]="showFilters()"
+      aria-controls="filters"
+      [attr.aria-label]="'Filters' + (chips().length ? ', ' + chips().length + ' on' : '')"
+    >
+      <mat-icon>tune</mat-icon>
+      @if (chips().length) {
+        <span class="badge" aria-hidden="true">{{ chips().length }}</span>
+      }
+    </button>
+  </form>
+
+  @if (!auth.isLoggedIn()) {
     <a class="owner-side" routerLink="/login">
-      Own equipment? <strong>See the owner side</strong>
-      <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+      <span class="owner-side-icon" aria-hidden="true"><mat-icon>storefront</mat-icon></span>
+      <span>
+        <strong>Own equipment?</strong>
+        <span>See the owner side in one click</span>
+      </span>
+      <mat-icon class="arrow" aria-hidden="true">arrow_outward</mat-icon>
     </a>
-  </section>
-}
-<h1>Find equipment</h1>
+  }
+</section>
+
+<nav class="categories" aria-label="Categories">
+  <button
+    type="button"
+    class="category"
+    [class.active]="!query().category"
+    [attr.aria-pressed]="!query().category"
+    (click)="chooseCategory(null)"
+  >
+    <span class="category-icon"><mat-icon aria-hidden="true">apps</mat-icon></span>
+    All
+  </button>
+  @for (category of categories; track category.value) {
+    <button
+      type="button"
+      class="category"
+      [class.active]="query().category === category.value"
+      [attr.aria-pressed]="query().category === category.value"
+      (click)="chooseCategory(category.value)"
+    >
+      <span class="category-icon"
+        ><mat-icon aria-hidden="true">{{ category.icon }}</mat-icon></span
+      >
+      {{ category.label }}
+    </button>
+  }
+</nav>
+
 @if (aiEnabled()) {
   <app-assistant-panel class="assistant" />
 }
-
-<div class="toolbar">
-  <button
-    mat-stroked-button
-    type="button"
-    class="filters-toggle"
-    (click)="showFilters.set(!showFilters())"
-    [attr.aria-expanded]="showFilters()"
-    aria-controls="filters"
-  >
-    <mat-icon>tune</mat-icon>
-    Filters
-    @if (chips().length) {
-      ({{ chips().length }})
-    }
-  </button>
-
-  <mat-chip-set aria-label="Active filters" class="chips">
-    @for (chip of chips(); track chip.key) {
-      <mat-chip [removable]="true" (removed)="removeChip(chip.key)">
-        {{ chip.label }}
-        <button matChipRemove [attr.aria-label]="'Remove ' + chip.label">
-          <mat-icon>cancel</mat-icon>
-        </button>
-      </mat-chip>
-    }
-  </mat-chip-set>
-  @if (chips().length) {
-    <button mat-button type="button" (click)="clearFilters()">Clear all</button>
-  }
-
-  <mat-form-field class="sort" subscriptSizing="dynamic">
-    <mat-label>Sort</mat-label>
-    <mat-select [value]="query().sort" (selectionChange)="changeSort($event.value)">
-      @for (option of sortOptions; track option.value) {
-        <mat-option [value]="option.value">{{ option.label }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-</div>
 
 <div class="layout" [class.with-filters]="showFilters()">
   @if (showFilters()) {
@@ -69,10 +102,18 @@
       (ngSubmit)="applyFilters()"
       aria-label="Filters"
     >
-      <mat-form-field>
-        <mat-label>Keywords</mat-label>
-        <input matInput formControlName="q" placeholder="e.g. tent, excavator" />
-      </mat-form-field>
+      <div class="filters-head">
+        <h2>Filters</h2>
+        <button
+          mat-icon-button
+          type="button"
+          class="close-filters"
+          aria-label="Close filters"
+          (click)="showFilters.set(false)"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
       <mat-form-field>
         <mat-label>Category</mat-label>
         <mat-select formControlName="category">
@@ -84,15 +125,16 @@
       </mat-form-field>
       <mat-form-field>
         <mat-label>Location</mat-label>
+        <mat-icon matIconPrefix aria-hidden="true">place</mat-icon>
         <input matInput formControlName="location" placeholder="e.g. Nakuru" />
       </mat-form-field>
       <div class="pair">
         <mat-form-field>
-          <mat-label>Min KES/day</mat-label>
+          <mat-label>Min KES</mat-label>
           <input matInput type="number" min="0" step="500" formControlName="minRate" />
         </mat-form-field>
         <mat-form-field>
-          <mat-label>Max KES/day</mat-label>
+          <mat-label>Max KES</mat-label>
           <input matInput type="number" min="0" step="500" formControlName="maxRate" />
         </mat-form-field>
       </div>
@@ -102,17 +144,53 @@
           <input matStartDate formControlName="from" placeholder="First day" />
           <input matEndDate formControlName="to" placeholder="Last day" />
         </mat-date-range-input>
-        <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
         <mat-datepicker-toggle matIconSuffix [for]="picker" />
         <mat-date-range-picker #picker />
       </mat-form-field>
       <div class="filter-actions">
-        <button mat-flat-button type="submit">Apply filters</button>
+        <button mat-flat-button type="submit">Show results</button>
+        @if (chips().length) {
+          <button mat-button type="button" (click)="clearFilters()">Clear all</button>
+        }
       </div>
     </form>
   }
 
   <section class="results" aria-live="polite" [attr.aria-busy]="results().state === 'loading'">
+    <div class="results-head">
+      <h2 class="section-title">
+        @if (results().page; as page) {
+          {{ page.totalElements }} {{ page.totalElements === 1 ? 'listing' : 'listings' }}
+        } @else {
+          Listings
+        }
+      </h2>
+      <mat-form-field class="sort" subscriptSizing="dynamic">
+        <mat-label>Sort</mat-label>
+        <mat-select [value]="query().sort" (selectionChange)="changeSort($event.value)">
+          @for (option of sortOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (chips().length) {
+      <div class="active-filters">
+        <mat-chip-set aria-label="Active filters">
+          @for (chip of chips(); track chip.key) {
+            <mat-chip [removable]="true" (removed)="removeChip(chip.key)">
+              {{ chip.label }}
+              <button matChipRemove [attr.aria-label]="'Remove ' + chip.label">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip>
+          }
+        </mat-chip-set>
+        <button mat-button type="button" class="clear" (click)="clearFilters()">Clear all</button>
+      </div>
+    }
+
     @if (results().state === 'loading') {
       <mat-progress-bar mode="indeterminate" aria-label="Loading equipment" />
     }
@@ -122,13 +200,13 @@
         <div class="state" role="alert">
           <mat-icon aria-hidden="true">cloud_off</mat-icon>
           <p>{{ results().error }}</p>
-          <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+          <button mat-flat-button type="button" (click)="retry()">Try again</button>
         </div>
       }
       @default {
         @if (results().page; as page) {
           @if (page.content?.length) {
-            <p class="count">
+            <p class="count visually-hidden">
               {{ page.totalElements }} {{ page.totalElements === 1 ? 'listing' : 'listings' }}
             </p>
             <ul class="grid" [class.stale]="results().state === 'loading'">
@@ -139,24 +217,31 @@
                     [routerLink]="['/equipment', item.id]"
                     [state]="{ from: router.url }"
                   >
-                    <mat-card appearance="outlined">
-                      <div class="card-top">
-                        <span class="category">
-                          <mat-icon aria-hidden="true">{{ categoryIcon(item.category) }}</mat-icon>
-                          {{ categoryLabel(item.category) }}
-                        </span>
-                        @if (item.equipmentStatus !== 'AVAILABLE') {
-                          <span class="status">{{ statusLabel(item.equipmentStatus) }}</span>
-                        }
-                      </div>
-                      <h2 class="name">{{ item.name }}</h2>
+                    <div class="visual-wrap">
+                      <app-equipment-visual [name]="item.name" [category]="item.category" />
+                      <span class="tag">
+                        <mat-icon aria-hidden="true">{{ categoryIcon(item.category) }}</mat-icon>
+                        {{ categoryLabel(item.category) }}
+                      </span>
+                      @if (item.equipmentStatus !== 'AVAILABLE') {
+                        <span class="status">{{ statusLabel(item.equipmentStatus) }}</span>
+                      }
+                    </div>
+                    <div class="card-body">
+                      <h3 class="name">{{ item.name }}</h3>
                       <p class="location">
                         <mat-icon aria-hidden="true">place</mat-icon>{{ item.location }}
                       </p>
-                      <p class="rate">
-                        <strong>{{ formatKes(item.dailyRateKes) }}</strong> / day
-                      </p>
-                    </mat-card>
+                      <div class="card-foot">
+                        <p class="rate">
+                          <strong>{{ formatKes(item.dailyRateKes) }}</strong>
+                          <span>/ day</span>
+                        </p>
+                        <span class="open" aria-hidden="true">
+                          <mat-icon>arrow_outward</mat-icon>
+                        </span>
+                      </div>
+                    </div>
                   </a>
                 </li>
               }
@@ -174,7 +259,7 @@
               <mat-icon aria-hidden="true">search_off</mat-icon>
               @if (chips().length) {
                 <p>No equipment matches these filters.</p>
-                <button mat-stroked-button type="button" (click)="clearFilters()">
+                <button mat-flat-button type="button" (click)="clearFilters()">
                   Clear filters
                 </button>
               } @else {

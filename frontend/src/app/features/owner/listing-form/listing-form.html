@@ -84,8 +84,9 @@
             Write it for me
           </h2>
           <p class="hint">
-            Fill in the name and category (and the location, for a rate suggestion). Add any
-            details, and the AI drafts a description you can change.
+            Give the <strong>name</strong> and <strong>category</strong> above (and the location,
+            for a rate suggestion). Add any details here, and the AI drafts a description you can
+            change.
           </p>
           <mat-form-field subscriptSizing="dynamic">
             <mat-label>Details for the AI (optional)</mat-label>
@@ -101,7 +102,7 @@
               mat-stroked-button
               type="button"
               (click)="writeForMe()"
-              [disabled]="!canDraft()"
+              [disabled]="drafting()"
               data-testid="write-for-me"
             >
               {{ drafting() ? 'Writing…' : 'Write it for me' }}
@@ -189,7 +190,7 @@
 
       <div class="form-actions">
         <a mat-button routerLink="/my-listings">Cancel</a>
-        <button mat-flat-button type="submit" [disabled]="saving()">
+        <button mat-flat-button class="cta" type="submit" [disabled]="saving()">
           {{ saving() ? 'Saving…' : editing() ? 'Save changes' : 'Create listing' }}
         </button>
       </div>

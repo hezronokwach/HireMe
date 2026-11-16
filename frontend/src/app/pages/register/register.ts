@@ -9,6 +9,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { Router, RouterLink } from '@angular/router';
@@ -42,6 +43,7 @@ type Field = 'fullName' | 'email' | 'phoneNumber' | 'password';
     MatInputModule,
     MatRadioModule,
     MatButtonModule,
+    MatIconModule,
   ],
   templateUrl: './register.html',
   styleUrls: ['../auth-form.scss', './register.scss'],

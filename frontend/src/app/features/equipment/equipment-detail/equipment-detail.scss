@@ -1,89 +1,190 @@
 :host {
   display: block;
-  max-width: 960px;
-  margin: 0 auto;
 }
 
 .back {
-  margin: 0 0 8px -12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 8px 16px 8px 10px;
+  border-radius: 999px;
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow);
+  color: var(--hm-ink);
+  text-decoration: none;
+  font: var(--mat-sys-label-large);
+  font-weight: 600;
+
+  &:hover {
+    background: var(--hm-yellow-wash);
+  }
 }
 
+// Desktop: the picture and the story on the left, the booking card riding along on the right.
 .detail {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: minmax(0, 1fr) 380px;
   grid-template-areas:
-    'header booking'
+    'gallery booking'
+    'info booking'
     'description booking'
-    'availability availability';
-  gap: 16px 32px;
+    'availability booking';
+  grid-template-rows: auto auto auto 1fr;
+  gap: 24px 40px;
 }
 
-header {
-  grid-area: header;
+.gallery {
+  grid-area: gallery;
+}
+
+.info {
+  grid-area: info;
+}
+
+.category {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 999px;
+  background: var(--hm-yellow-wash);
+  border: 1px solid var(--hm-yellow-soft);
+  font: var(--mat-sys-label-large);
+  font-weight: 600;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
 }
 
 h1 {
-  font: var(--mat-sys-headline-medium);
-  margin: 8px 0 4px;
+  margin: 14px 0 8px;
+  font-weight: 800;
+  font-size: clamp(1.75rem, 1.3rem + 1.8vw, 2.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
 }
 
 h2 {
+  margin: 0 0 10px;
   font: var(--mat-sys-title-large);
-  margin: 0 0 8px;
+  font-weight: 700;
 }
 
-.category,
 .location {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   margin: 0;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--hm-muted);
+  font: var(--mat-sys-body-large);
 }
 
+// The booking card: white, raised, and sticky so the price and button stay in view.
 .booking {
   grid-area: booking;
   align-self: start;
-  padding: 20px;
+  position: sticky;
+  top: 92px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  padding: 24px;
+  border-radius: var(--hm-radius);
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow-lift);
 
   p {
     margin: 0;
   }
 }
 
-.rate strong {
-  font: var(--mat-sys-headline-small);
-  color: var(--mat-sys-primary);
+.price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--hm-line);
+}
+
+.rate {
+  strong {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  span {
+    color: var(--hm-muted);
+    font: var(--mat-sys-body-large);
+  }
 }
 
 .status {
-  color: var(--mat-sys-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #eaf6e7;
+  color: #1f5f1a;
   font: var(--mat-sys-label-large);
+  font-weight: 600;
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
 
   &.unavailable {
-    color: var(--mat-sys-tertiary);
+    background: #f4efe4;
+    color: var(--hm-muted);
   }
 }
 
 .hint {
-  color: var(--mat-sys-on-surface-variant);
-  font: var(--mat-sys-body-small);
+  color: var(--hm-muted);
+  font: var(--mat-sys-body-medium);
+}
+
+.description,
+.availability {
+  padding: 24px;
+  border-radius: var(--hm-radius);
+  background: var(--hm-card);
+  box-shadow: var(--hm-shadow);
 }
 
 .description {
   grid-area: description;
 
   p {
-    white-space: pre-line;
     margin: 0;
+    white-space: pre-line;
+    color: var(--hm-ink-soft);
+    font: var(--mat-sys-body-large);
+    line-height: 1.6;
   }
 }
 
 .availability {
   grid-area: availability;
+  align-self: start;
+}
+
+.section-head {
+  margin-bottom: 16px;
+
+  h2 {
+    margin-bottom: 4px;
+  }
 }
 
 .availability-body {
@@ -96,18 +197,22 @@ h2 {
 mat-calendar {
   width: 320px;
   max-width: 100%;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 12px;
+  border-radius: 20px;
+  background: var(--hm-paper);
+  border: 1px solid var(--hm-line);
 }
 
 // Booked days, from dateClass().
 :host ::ng-deep .booked-day .mat-calendar-body-cell-content {
-  background: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
+  background: var(--hm-ink);
+  color: #fff;
   text-decoration: line-through;
 }
 
 .periods {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -115,8 +220,12 @@ mat-calendar {
   li {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 0;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--hm-paper);
+    border: 1px solid var(--hm-line);
+    font-weight: 600;
   }
 }
 
@@ -124,26 +233,73 @@ mat-calendar {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--mat-sys-error);
+  background: var(--hm-ink);
 }
 
 .free {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #eaf6e7;
+  color: #1f5f1a;
+  font-weight: 600;
 }
 
 .state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 48px 16px;
+  gap: 12px;
+  padding: 56px 16px;
+  border-radius: var(--hm-radius);
+  background: var(--hm-card);
   text-align: center;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--hm-muted);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--hm-ink);
+  }
+
+  p {
+    margin: 0;
+  }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .detail {
-    grid-template-columns: 1fr;
-    grid-template-areas: 'header' 'booking' 'description' 'availability';
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px 24px;
+  }
+}
+
+// Phones and small tablets: one column, the booking card right under the title.
+@media (max-width: 799px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'gallery' 'info' 'booking' 'description' 'availability';
+    grid-template-rows: none;
+    gap: 16px;
+  }
+
+  .booking {
+    position: static;
+  }
+
+  // A banner instead of a tall tile, so the title and price are close to the top.
+  .gallery app-equipment-visual {
+    aspect-ratio: auto;
+    height: clamp(200px, 48vw, 320px);
+  }
+
+  .description,
+  .availability,
+  .booking {
+    padding: 20px;
   }
 }

@@ -1,7 +1,7 @@
 .booking-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 
   mat-form-field {
     width: 100%;
@@ -12,19 +12,56 @@
   }
 }
 
-.quote strong {
-  font: var(--mat-sys-title-medium);
-  color: var(--mat-sys-primary);
+.dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dates-hint {
+  margin-top: -6px !important;
+  text-align: left;
+}
+
+@media (max-width: 380px) {
+  .dates {
+    grid-template-columns: 1fr;
+  }
+}
+
+// The total, as a receipt line: days × rate on the left, the amount on the right.
+.quote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--hm-yellow-wash);
+  border: 1px solid var(--hm-yellow-soft);
+  color: var(--hm-ink-soft);
+
+  strong {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--hm-ink);
+  }
+}
+
+.cta {
+  width: 100%;
 }
 
 .problem {
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fdecea;
+  color: #8c1d18;
 }
 
 .hint {
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--hm-muted);
   font: var(--mat-sys-body-small);
+  text-align: center;
 }

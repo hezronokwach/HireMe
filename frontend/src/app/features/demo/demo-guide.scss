@@ -1,18 +1,24 @@
 :host {
   display: block;
+  width: 100%;
+  max-width: var(--hm-page);
+  margin: 16px auto 0;
+  padding: 0 24px;
+  box-sizing: border-box;
 }
 
-// A paper-ticket strip across the top: tinted, with a dashed tear line under it, so it reads as a guide
-// laid over the app rather than part of the owner's own pages.
+// A dark card, like the assistant: it's a guide laid over the app, not part of the owner's pages.
 .guide {
-  padding: 8px 16px 12px;
-  background: var(--mat-sys-tertiary-container);
-  color: var(--mat-sys-on-tertiary-container);
-  border-bottom: 2px dashed
-    color-mix(in srgb, var(--mat-sys-on-tertiary-container) 35%, transparent);
+  padding: 16px 18px 18px;
+  border-radius: var(--hm-radius);
+  background:
+    radial-gradient(500px 200px at 100% 0%, rgba(255, 201, 40, 0.2), rgba(255, 201, 40, 0) 70%),
+    var(--hm-ink);
+  color: #fff;
+  box-shadow: var(--hm-shadow-lift);
 
   &.collapsed {
-    padding-bottom: 8px;
+    padding-bottom: 16px;
   }
 }
 
@@ -21,64 +27,68 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  max-width: 1200px;
-  margin: 0 auto;
+
+  button {
+    --mat-button-text-label-text-color: var(--hm-yellow);
+  }
 }
 
 .title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
   font: var(--mat-sys-title-small);
   min-width: 0;
+
+  mat-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: var(--hm-yellow);
+    color: var(--hm-ink);
+    font-size: 20px;
+  }
+
+  strong {
+    color: var(--hm-yellow);
+  }
 }
 
 .steps {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 8px;
-  max-width: 1200px;
-  margin: 8px auto 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 0;
   padding: 0;
   list-style: none;
 
   a {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     height: 100%;
     box-sizing: border-box;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--mat-sys-surface) 70%, transparent);
-    color: var(--mat-sys-on-surface);
+    padding: 14px;
+    border-radius: 18px;
+    background: #222;
+    color: #fff;
     text-decoration: none;
-    border: 1px solid transparent;
+    border: 1px solid #2f2f2f;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
 
     &:hover,
     &:focus-visible {
-      border-color: var(--mat-sys-outline);
+      border-color: #555;
     }
 
     &.current {
-      border-color: var(--mat-sys-tertiary);
-      background: var(--mat-sys-surface);
-    }
-  }
-}
-
-// Phones: the steps become a row to swipe through, so the guide doesn't push the page off the screen.
-@media (max-width: 599px) {
-  .steps {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: 80%;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 4px;
-
-    li {
-      scroll-snap-align: start;
+      border-color: var(--hm-yellow);
+      background: #262212;
     }
   }
 }
@@ -87,22 +97,26 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--mat-sys-tertiary);
-  color: var(--mat-sys-on-tertiary);
+  background: var(--hm-yellow);
+  color: var(--hm-ink);
   font: var(--mat-sys-label-large);
+  font-weight: 800;
 }
 
 .text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   font: var(--mat-sys-body-small);
+  color: rgba(255, 255, 255, 0.7);
 
   strong {
+    color: #fff;
     font: var(--mat-sys-label-large);
+    font-weight: 700;
   }
 }
 
@@ -112,11 +126,50 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px 12px;
-  max-width: 1200px;
-  margin: 8px auto 0;
+  margin-top: 12px;
 
   p {
     margin: 0;
+    color: rgba(255, 255, 255, 0.55);
     font: var(--mat-sys-body-small);
+  }
+
+  button {
+    --mat-button-text-label-text-color: #fff;
+  }
+}
+
+@media (max-width: 999px) {
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// Phones: the steps become a row to swipe through, so the guide doesn't push the page off the screen.
+@media (max-width: 599px) {
+  :host {
+    padding: 0 16px;
+  }
+
+  .title span {
+    font-size: 13px;
+  }
+
+  .long {
+    display: none;
+  }
+
+  .steps {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 82%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+
+    li {
+      scroll-snap-align: start;
+    }
   }
 }

@@ -114,6 +114,10 @@ describe('EquipmentList', () => {
     const el = await open('/equipment?page=2');
     searchRequest().flush(page([TRACTOR], 30));
     await settle();
+    // The panel starts closed: the search bar and category buttons cover most searches.
+    expect(el.querySelector('form#filters')).toBeNull();
+    el.querySelector<HTMLButtonElement>('.filters-toggle')!.click();
+    await settle();
 
     const location = el.querySelector<HTMLInputElement>('input[formControlName="location"]')!;
     location.value = ' Eldoret ';
@@ -178,5 +182,33 @@ describe('EquipmentList', () => {
     expect(params.has('category')).toBe(false);
     expect(params.get('size')).toBe('12');
     expect(decodeURIComponent(params.get('sort')!)).toBe('createdAt,desc');
+  });
+
+  it('a category button filters by that category, and All clears it', async () => {
+    const el = await open('/equipment');
+    searchRequest().flush(page([TRACTOR]));
+    await settle();
+
+    [...el.querySelectorAll<HTMLButtonElement>('.category')]
+      .find((b) => b.textContent?.includes('Agricultural'))!
+      .click();
+    await settle();
+    expect(TestBed.inject(Router).url).toBe('/equipment?category=AGRICULTURAL');
+    searchRequest().flush(page([TRACTOR]));
+    await settle();
+
+    [...el.querySelectorAll<HTMLButtonElement>('.category')]
+      .find((b) => b.textContent?.trim().endsWith('All'))!
+      .click();
+    await settle();
+    expect(TestBed.inject(Router).url).toBe('/equipment');
+    searchRequest().flush(page([TRACTOR]));
+  });
+
+  it('opens the filter panel straight away when the URL has filters only it can show', async () => {
+    const el = await open('/equipment?location=Nakuru');
+    searchRequest().flush(page([TRACTOR]));
+    await settle();
+    expect(el.querySelector('form#filters')).not.toBeNull();
   });
 });
