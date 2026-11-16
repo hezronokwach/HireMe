@@ -37,7 +37,7 @@ class EquipmentPhotoHttpTest {
     void ownerAddsAPhoto_anyoneSeesIt_onlyTheOwnerRemovesIt() throws Exception {
         String owner = signUp("OWNER");
         long listing = jsonMapper.readTree(send(json("POST", "/api/v1/equipment", owner, """
-                {"name":"Photo Tractor","category":"AGRICULTURAL","description":"d","dailyRateKes":5000,"location":"Nakuru"}"""))
+                {"name":"Photo Test Listing","category":"AGRICULTURAL","description":"d","dailyRateKes":5000,"location":"Photoville"}"""))
                 .body()).get("id").asLong();
 
         HttpResponse<String> upload = send(multipart("/api/v1/equipment/" + listing + "/photos", owner, PNG));
@@ -69,6 +69,9 @@ class EquipmentPhotoHttpTest {
 
         assertEquals(204, send(request(url, owner).DELETE().build()).statusCode());
         assertEquals(404, send(request(url, null).GET().build()).statusCode());
+
+        // Other tests share this database and count listings, so leave nothing behind.
+        assertEquals(204, send(request("/api/v1/equipment/" + listing, owner).DELETE().build()).statusCode());
     }
 
     private String signUp(String role) throws Exception {

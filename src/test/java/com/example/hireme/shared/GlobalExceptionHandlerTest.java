@@ -109,4 +109,22 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertTrue(response.getBody().message().contains("Something went wrong"));
     }
+
+    @Test
+    void handleMaxUploadSize_returns413WithAPlainMessage() {
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleMaxUploadSize(
+                new org.springframework.web.multipart.MaxUploadSizeExceededException(3_145_728));
+
+        assertEquals(HttpStatus.CONTENT_TOO_LARGE, response.getStatusCode());
+        assertEquals("That file is too large. Photos can be at most 2 MB.", response.getBody().message());
+    }
+
+    @Test
+    void handleMissingPart_returns400NamingThePart() {
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleMissingPart(
+                new org.springframework.web.multipart.support.MissingServletRequestPartException("file"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Missing 'file' in the upload", response.getBody().message());
+    }
 }
