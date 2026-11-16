@@ -145,6 +145,12 @@
         </section>
       }
 
+      <app-photo-manager
+        #photoManager
+        [equipmentId]="loaded().equipment?.id"
+        [photoUrls]="loaded().equipment?.photoUrls"
+      />
+
       <mat-form-field>
         <mat-label>Description</mat-label>
         <textarea

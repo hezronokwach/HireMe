@@ -1,0 +1,173 @@
+.photos {
+  margin: 4px 0 20px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font: var(--mat-sys-title-medium);
+    font-weight: 700;
+  }
+}
+
+.count {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--hm-yellow-wash);
+  font: var(--mat-sys-label-medium);
+  font-weight: 700;
+}
+
+.hint {
+  margin: 4px 0 12px;
+  color: var(--hm-muted);
+  font: var(--mat-sys-body-small);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--hm-yellow-wash);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  &.uploading img {
+    opacity: 0.5;
+  }
+
+  mat-progress-bar {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: auto;
+  }
+}
+
+.cover-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--hm-yellow);
+  color: var(--hm-ink);
+  font: var(--mat-sys-label-small);
+  font-weight: 800;
+}
+
+.tile-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.tile-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.78);
+  color: #fff;
+  cursor: pointer;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: var(--hm-ink);
+    color: var(--hm-yellow);
+  }
+
+  &.danger:hover {
+    color: #ffb4a9;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--hm-yellow);
+    outline-offset: 1px;
+  }
+}
+
+// The "add" tile: a dashed drop zone the size of a photo.
+.add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  aspect-ratio: 4 / 3;
+  border: 2px dashed #e0c86f;
+  border-radius: 16px;
+  background: var(--hm-yellow-wash);
+  color: var(--hm-ink);
+  cursor: pointer;
+  text-align: center;
+  font: var(--mat-sys-label-large);
+  font-weight: 700;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+
+  &:hover,
+  &:focus-within {
+    background: var(--hm-yellow-soft);
+    border-color: var(--hm-ink);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: progress;
+  }
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  small {
+    color: var(--hm-muted);
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.error {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fdecea;
+  color: #8c1d18;
+}

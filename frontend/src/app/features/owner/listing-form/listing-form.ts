@@ -1,5 +1,6 @@
+import { PhotoManager } from '../photo-manager/photo-manager';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -98,6 +99,7 @@ type Field = 'name' | 'category' | 'location' | 'dailyRateKes' | 'description';
 @Component({
   selector: 'app-listing-form',
   imports: [
+    PhotoManager,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
@@ -121,6 +123,7 @@ export class ListingForm {
 
   /** Route parameter; absent when creating a listing. */
   readonly id = input<string>();
+  private readonly photoManager = viewChild<PhotoManager>('photoManager');
   protected readonly editing = computed(() => this.id() !== undefined);
 
   protected readonly categories = CATEGORIES;
@@ -291,13 +294,19 @@ export class ListingForm {
     this.error.set(null);
     this.serverErrors.set({});
     request.subscribe({
-      next: (saved) => {
+      next: async (saved) => {
+        // Photos picked for a new listing go up now that it exists.
+        const manager = this.photoManager();
+        const failed =
+          !original && manager?.hasPending() ? await manager.uploadPending(saved.id!) : 0;
         this.snackBar.open(
-          original ? `Saved “${saved.name}”.` : `“${saved.name}” is listed.`,
+          failed
+            ? `“${saved.name}” is listed, but ${failed} photo${failed === 1 ? '' : 's'} didn't upload. Add ${failed === 1 ? 'it' : 'them'} from Edit.`
+            : original
+              ? `Saved “${saved.name}”.`
+              : `“${saved.name}” is listed.`,
           'OK',
-          {
-            duration: 4000,
-          },
+          { duration: failed ? 8000 : 4000 },
         );
         void this.router.navigate(['/my-listings']);
       },
